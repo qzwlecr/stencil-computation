@@ -1,0 +1,9 @@
+Job <45693790> has been submitted to queue <q_sw_expr>
+waiting for dispatch ...
+Significant numeric error.
+27-point stencil - A naive base-line:
+Size (512 x 512 x 512), Timestep 16
+Preprocessing time 0.000019s
+Computation time 203.606656s, Performance 0.559003Gflop/s
+dispatching ...
+Job 45693790 has been finished.

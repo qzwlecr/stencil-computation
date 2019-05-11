@@ -1,0 +1,58 @@
+[
+ {
+  "directory": "/home/qzwlecr/Documents/CPC_cluster",
+  "arguments": [
+   "mpicc",
+   "-c",
+   "-Wall",
+   "-std=c99",
+   "-OPT:IEEE_arith=1",
+   "check.c",
+   "-o",
+   "check.o"
+  ],
+  "file": "check.c"
+ },
+ {
+  "directory": "/home/qzwlecr/Documents/CPC_cluster",
+  "arguments": [
+   "mpicc",
+   "-c",
+   "-Wall",
+   "-std=c99",
+   "-OPT:IEEE_arith=1",
+   "benchmark.c",
+   "-o",
+   "benchmark.o"
+  ],
+  "file": "benchmark.c"
+ },
+ {
+  "directory": "/home/qzwlecr/Documents/CPC_cluster",
+  "arguments": [
+   "mpicc",
+   "-c",
+   "-Wall",
+   "-std=c99",
+   "-OPT:IEEE_arith=1",
+   "stencil-naive.c",
+   "-o",
+   "stencil-naive.o"
+  ],
+  "file": "stencil-naive.c"
+ },
+ {
+  "directory": "/home/qzwlecr/Documents/CPC_cluster",
+  "arguments": [
+   "mpicc",
+   "-c",
+   "-Wall",
+   "-std=c99",
+   "-OPT:IEEE_arith=1",
+   "stencil-optimized.c",
+   "-o",
+   "stencil-optimized.o"
+  ],
+  "file": "stencil-optimized.c"
+ }
+]

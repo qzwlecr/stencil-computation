@@ -1,0 +1,5 @@
+benchmark-naive
+benchmark-optimized
+*.o
+.idea/
+.vscode/
