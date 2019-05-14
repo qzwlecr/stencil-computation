@@ -3,3 +3,5 @@ benchmark-optimized
 *.o
 .idea/
 .vscode/
+run.log
+.tune_err
