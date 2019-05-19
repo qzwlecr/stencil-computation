@@ -57,6 +57,12 @@ typedef struct {
     void *additional_info;
 } dist_grid_info_t;
 
+typedef struct {
+    data_t *src;
+    data_t *dest;
+    const dist_grid_info_t *grid_info;
+} param;
+
 /* type == 7 or type == 27 */
 void create_dist_grid(dist_grid_info_t *info, int stencil_type);
 void destroy_dist_grid(dist_grid_info_t *info);
@@ -65,5 +71,8 @@ void destroy_dist_grid(dist_grid_info_t *info);
  * the returned value should be either equal to `arr` or `aux` */
 ptr_t stencil_7(ptr_t arr, ptr_t aux, const dist_grid_info_t *info, int nt);
 ptr_t stencil_27(ptr_t arr, ptr_t aux, const dist_grid_info_t *info, int nt);
+
+void stencil_7_compute(param *p);
+void stencil_27_compute(param *p);
 
 #endif
