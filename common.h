@@ -58,8 +58,8 @@ typedef struct {
 } dist_grid_info_t;
 
 typedef struct {
-    data_t *src;
-    data_t *dest;
+    cptr_t src;
+    ptr_t dest;
     const dist_grid_info_t *grid_info;
 } param;
 

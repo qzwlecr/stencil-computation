@@ -44,6 +44,12 @@ void destroy_dist_grid(dist_grid_info_t *grid_info) {
 /* your implementation */
 ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt) {
     ptr_t buffer[2] = {grid, aux};
+    int x_start = grid_info->halo_size_x,
+            x_end = grid_info->local_size_x + grid_info->halo_size_x;
+    int y_start = grid_info->halo_size_y,
+            y_end = grid_info->local_size_y + grid_info->halo_size_y;
+    int z_start = grid_info->halo_size_z,
+            z_end = grid_info->local_size_z + grid_info->halo_size_z;
     int ldx = grid_info->local_size_x + 2 * grid_info->halo_size_x;
     int ldy = grid_info->local_size_y + 2 * grid_info->halo_size_y;
     int ldz = grid_info->local_size_z + 2 * grid_info->halo_size_z;
@@ -140,6 +146,12 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
 /* your implementation */
 ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt) {
     ptr_t buffer[2] = {grid, aux};
+    int x_start = grid_info->halo_size_x,
+            x_end = grid_info->local_size_x + grid_info->halo_size_x;
+    int y_start = grid_info->halo_size_y,
+            y_end = grid_info->local_size_y + grid_info->halo_size_y;
+    int z_start = grid_info->halo_size_z,
+            z_end = grid_info->local_size_z + grid_info->halo_size_z;
     int ldx = grid_info->local_size_x + 2 * grid_info->halo_size_x;
     int ldy = grid_info->local_size_y + 2 * grid_info->halo_size_y;
     int ldz = grid_info->local_size_z + 2 * grid_info->halo_size_z;
@@ -167,7 +179,7 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
                 .dest = a1,
                 .grid_info = grid_info
         };
-        athread_spawn(stencil_7_compute, p);
+        athread_spawn(stencil_27_compute, p);
         MPI_Status status;
         if (pid % grid_info->num_x == 0) { // yz
             MPI_Sendrecv((void *) (a0 + x_end - 1), 1, yzplane, pid + 1, pid,

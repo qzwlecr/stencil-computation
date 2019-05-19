@@ -1,12 +1,11 @@
-
-CC = mpicc #mpiicc 
+CC = mpicc
 OPT =
-CFLAGS = -Wall -std=c99 $(OPT) -OPT:IEEE_arith=1  #-qopenmp
+CFLAGS = -Wall -std=c99 $(OPT) -OPT:IEEE_arith=1
 LDFLAGS = -Wall #-qopenmp
 LDLIBS = $(LDFLAGS)
 
 targets = benchmark-naive benchmark-optimized
-objects = check.o benchmark.o stencil-naive.o stencil-optimized.o
+objects = check.o benchmark.o stencil-naive.o stencil-optimized.o stencil-slave.o
 
 .PHONY : default
 default : all
@@ -17,11 +16,23 @@ all : clean $(targets)
 benchmark-naive : check.o benchmark.o stencil-naive.o
 	$(CC) -o $@ $^ $(LDLIBS)
 
-benchmark-optimized : check.o benchmark.o stencil-optimized.o
-	$(CC) -o $@ $^ $(LDLIBS)
+benchmark-optimized : check.o benchmark.o stencil-optimized.o stencil-slave.o
+	$(CC) -hybrid -o $@ $^ $(LDLIBS)
 
-%.o : %.c common.h
+check.o : check.c common.h
 	$(CC) -c $(CFLAGS) $< -o $@
+
+benchmark.o : check.c common.h
+	$(CC) -c $(CFLAGS) $< -o $@
+
+stencil-optimized.o : stencil-optimized.c common.h
+	$(CC) -c $(CFLAGS) $< -o $@
+
+stencil-naive.o : stencil-naive.c common.h
+	$(CC) -host -c $(CFLAGS) $< -o $@
+
+stencil-slave.o : stencil-slave.c common.h
+	$(CC) -slave -c $(CFLAGS) $< -o $@
 
 .PHONY: clean
 clean:

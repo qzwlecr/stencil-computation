@@ -20,13 +20,13 @@ void stencil_7_compute(param *p) {
     int y_end = y_size * (id + 1) + p->grid_info->halo_size_y;
 
     int z_begin = p->grid_info->halo_size_z;
-    int z_end = p->grid_info->local_size_z + grid_info->halo_size_z;
+    int z_end = p->grid_info->local_size_z + p->grid_info->halo_size_z;
 
     int ldx = p->grid_info->local_size_x + 2 * p->grid_info->halo_size_x;
     int ldy = p->grid_info->local_size_y + 2 * p->grid_info->halo_size_y;
 
-    data_t *src = p->src;
-    data_t *dest = p->dest;
+    cptr_t src = p->src;
+    ptr_t dest = p->dest;
 
     // cache strategy is full x, splited y, zero z
     // maybe too slow when block size is small
@@ -80,13 +80,13 @@ void stencil_27_compute(param *p) {
     int y_end = y_size * (id + 1) + p->grid_info->halo_size_y;
 
     int z_begin = p->grid_info->halo_size_z;
-    int z_end = p->grid_info->local_size_z + grid_info->halo_size_z;
+    int z_end = p->grid_info->local_size_z + p->grid_info->halo_size_z;
 
     int ldx = p->grid_info->local_size_x + 2 * p->grid_info->halo_size_x;
     int ldy = p->grid_info->local_size_y + 2 * p->grid_info->halo_size_y;
 
-    data_t *src = p->src;
-    data_t *dest = p->dest;
+    cptr_t src = p->src;
+    ptr_t dest = p->dest;
 
     // cache strategy is full x, splited y, zero z
     // maybe too slow when block size is small
