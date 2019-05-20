@@ -5,7 +5,7 @@
 #define LENGTH (384+2)
 #define THREAD_NUM 64
 
-void stencil_7_compute(param *p) {
+void stencil_7_com(param *p) {
     data_t origin[4 * 4 * LENGTH];
     data_t answer[2 * 2 * LENGTH];
     volatile int id = athread_get_id(-1);
@@ -58,14 +58,14 @@ void stencil_7_compute(param *p) {
 
             put_reply = 0;
             athread_put(PE_MODE, &dest[INDEX(0, yy, zz, ldx, ldy)], &answer, ldx * 4 * sizeof(data_t),
-                        &put_reply, 0, ldx * (ldy - 2) * sizeof(data_t), ldx * 2 * sizeof(data_t));
+                        &put_reply, ldx * (ldy - 2) * sizeof(data_t), ldx * 2 * sizeof(data_t));
             while (put_reply != 1);
         }
     }
     return;
 }
 
-void stencil_27_compute(param *p) {
+void stencil_27_com(param *p) {
     data_t origin[4 * 4 * LENGTH];
     data_t answer[2 * 2 * LENGTH];
     volatile int id = athread_get_id(-1);
@@ -138,7 +138,7 @@ void stencil_27_compute(param *p) {
 
             put_reply = 0;
             athread_put(PE_MODE, &dest[INDEX(0, yy, zz, ldx, ldy)], &answer, ldx * 4 * sizeof(data_t),
-                        &put_reply, 0, ldx * (ldy - 2) * sizeof(data_t), ldx * 2 * sizeof(data_t));
+                        &put_reply, ldx * (ldy - 2) * sizeof(data_t), ldx * 2 * sizeof(data_t));
             while (put_reply != 1);
         }
     }

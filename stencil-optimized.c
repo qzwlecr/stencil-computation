@@ -8,6 +8,9 @@
 
 const char *version_name = "Optimized version";
 
+extern SLAVE_FUN(stencil_7_com)(param *);
+extern SLAVE_FUN(stencil_27_com)(param *);
+
 /* your implementation */
 void create_dist_grid(dist_grid_info_t *grid_info, int stencil_type) {
     if (grid_info->p_num == 16) {
@@ -77,7 +80,7 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
                 .dest = a1,
                 .grid_info = grid_info
         };
-        athread_spawn(stencil_7_compute, p);
+        athread_spawn(stencil_7_com, &p);
         MPI_Status status;
         if (pid % grid_info->num_x == 0) { // yz
             MPI_Sendrecv((void *) (a0 + x_end - 1), 1, yzplane, pid + 1, pid,
@@ -179,7 +182,7 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
                 .dest = a1,
                 .grid_info = grid_info
         };
-        athread_spawn(stencil_27_compute, p);
+        athread_spawn(stencil_27_com, &p);
         MPI_Status status;
         if (pid % grid_info->num_x == 0) { // yz
             MPI_Sendrecv((void *) (a0 + x_end - 1), 1, yzplane, pid + 1, pid,
