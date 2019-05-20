@@ -1,4 +1,5 @@
 CC = mpicc
+SWCC = sw5cc
 OPT =
 CFLAGS = -Wall -std=c99 $(OPT) -OPT:IEEE_arith=1
 LDFLAGS = -Wall
@@ -32,7 +33,7 @@ stencil-naive.o : stencil-naive.c common.h
 	$(CC) -c $(CFLAGS) $< -o $@
 
 stencil-slave.o : stencil-slave.c common.h
-	$(CC) -slave -c $(CFLAGS) $< -o $@ -lm
+	$(SWCC) -slave -c $(CFLAGS) $< -o $@ -lm
 
 .PHONY: clean
 clean:
