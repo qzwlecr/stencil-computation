@@ -4,12 +4,14 @@
 #include <athread.h>
 #include "common.h"
 
-#define DUMP(varname) fprintf(stderr, "[%d]%s = %d\n", grid_info->p_id, #varname, varname);
+//#define DUMP(varname) fprintf(stderr, "[%d]%s = %d\n", grid_info->p_id, #varname, varname);
 
 const char *version_name = "Optimized version";
 
 extern SLAVE_FUN(stencil_7_com)(param *);
 extern SLAVE_FUN(stencil_27_com)(param *);
+
+volatile int sync = 0;
 
 /* your implementation */
 void create_dist_grid(dist_grid_info_t *grid_info, int stencil_type) {
@@ -41,6 +43,7 @@ void create_dist_grid(dist_grid_info_t *grid_info, int stencil_type) {
 
 /* your implementation */
 void destroy_dist_grid(dist_grid_info_t *grid_info) {
+    athread_halt();
 
 }
 
@@ -69,18 +72,19 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
     MPI_Type_commit(&xyplane);
 
     int pid = grid_info->p_id;
-    cptr_t a0;
-    ptr_t a1;
+    ptr_t a0, a1;
+    param p = {
+            .src = &a0,
+            .dest = &a1,
+            .nt = nt,
+            .sync = &sync,
+            .grid_info = grid_info
+    };
+    athread_spawn(stencil_7_com, &p);
 
     for (int t = 0; t < nt; ++t) {
         a0 = buffer[t % 2];
         a1 = buffer[(t + 1) % 2];
-        param p = {
-                .src = a0,
-                .dest = a1,
-                .grid_info = grid_info
-        };
-        athread_spawn(stencil_7_com, &p);
         MPI_Status status;
         if (pid % grid_info->num_x == 0) { // yz
             MPI_Sendrecv((void *) (a0 + x_end - 1), 1, yzplane, pid + 1, pid,
@@ -138,10 +142,12 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
                          MPI_COMM_WORLD, &status);
 
         }
+        sync = 1;
+        while(sync != 65);
+        sync = 0;
 
-        athread_join();
     }
-    athread_halt();
+    athread_join();
     fprintf(stderr, "[%d]Stencil 7 computing done\n", grid_info->p_id);
     return buffer[nt % 2];
 }
@@ -160,7 +166,7 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
     int ldz = grid_info->local_size_z + 2 * grid_info->halo_size_z;
 
 
-    fprintf(stderr, "[%d]Stencil 7 computing start\n", grid_info->p_id);
+    fprintf(stderr, "[%d]Stencil 27 computing start\n", grid_info->p_id);
 
     MPI_Datatype yzplane, xzplane, xyplane;
     MPI_Type_vector(ldy * ldz, 1, ldx, MPI_DOUBLE, &yzplane);
@@ -171,18 +177,19 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
     MPI_Type_commit(&xyplane);
 
     int pid = grid_info->p_id;
-    cptr_t a0;
-    ptr_t a1;
+    ptr_t a0, a1;
+    param p = {
+            .src = &a0,
+            .dest = &a1,
+            .nt = nt,
+            .sync = &sync,
+            .grid_info = grid_info
+    };
+    athread_spawn(stencil_7_com, &p);
 
     for (int t = 0; t < nt; ++t) {
         a0 = buffer[t % 2];
         a1 = buffer[(t + 1) % 2];
-        param p = {
-                .src = a0,
-                .dest = a1,
-                .grid_info = grid_info
-        };
-        athread_spawn(stencil_27_com, &p);
         MPI_Status status;
         if (pid % grid_info->num_x == 0) { // yz
             MPI_Sendrecv((void *) (a0 + x_end - 1), 1, yzplane, pid + 1, pid,
@@ -240,10 +247,12 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
                          MPI_COMM_WORLD, &status);
 
         }
+        sync = 1;
+        while(sync != 65);
+        sync = 0;
 
-        athread_join();
     }
-    athread_halt();
+    athread_join();
     fprintf(stderr, "[%d]Stencil 27 computing done\n", grid_info->p_id);
     return buffer[nt % 2];
 }
