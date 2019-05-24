@@ -41,6 +41,7 @@ void stencil_7_com(param *p) {
 
             for (int z = 1; z <= 2; ++z) {
                 for (int y = 1; y <= 2; ++y) {
+                    int ldy = 4;
                     for (int x = x_begin; x < x_end; ++x) {
                         answer[INDEX(x, y, z, ldx, ldy)] =
                                 ALPHA_ZZZ * origin[INDEX(x, y, z, ldx, ldy)]
@@ -101,6 +102,7 @@ void stencil_27_com(param *p) {
 
             for (int z = 1; z <= 2; ++z) {
                 for (int y = 1; y <= 2; ++y) {
+                    int ldy = 4;
                     for (int x = x_begin; x < x_end; ++x) {
                         answer[INDEX(x, y, z, ldx, ldy)] =
                                 ALPHA_ZZZ * origin[INDEX(x, y, z, ldx, ldy)]
