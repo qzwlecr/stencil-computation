@@ -9,7 +9,7 @@ const char *version_name = "Optimized version";
 
 /* your implementation */
 void create_dist_grid(dist_grid_info_t *grid_info, int stencil_type) {
-    if(grid_info->p_num == 16) {
+    if (grid_info->p_num == 16) {
         grid_info->num_x = 2;
         grid_info->num_y = 2;
         grid_info->num_z = 4;
@@ -81,7 +81,7 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info,
             MPI_Sendrecv((void *) (a0 + x_end - 1), 1, yzplane, pid + 1, pid,
                          (void *) (a0 + x_end), 1, yzplane, pid + 1, pid + 1,
                          MPI_COMM_WORLD, &status);
-        } else if (pid % grid_info->num_x == grid_info->num_x - 1){
+        } else if (pid % grid_info->num_x == grid_info->num_x - 1) {
             MPI_Sendrecv((void *) (a0 + x_start), 1, yzplane, pid - 1, pid,
                          (void *) (a0 + x_start - 1), 1, yzplane, pid - 1, pid - 1,
                          MPI_COMM_WORLD, &status);
@@ -95,53 +95,57 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info,
         }
 
         if ((pid / grid_info->num_x) % grid_info->num_y == 0) { // xz
-            MPI_Sendrecv((void *) (a0 + (y_end - 1) * ldx), 1, xzplane, pid + 2, pid,
-                         (void *) (a0 + y_end * ldx), 1, xzplane, pid + 2, pid + 2,
+            MPI_Sendrecv((void *) (a0 + (y_end - 1) * ldx), 1, xzplane, pid + grid_info->num_x, pid,
+                         (void *) (a0 + y_end * ldx), 1, xzplane, pid + grid_info->num_x, pid + grid_info->num_x,
                          MPI_COMM_WORLD, &status);
-        } else if ((pid / grid_info->num_x) % grid_info->num_y == grid_info->num_y - 1){
-            MPI_Sendrecv((void *) (a0 + y_start * ldx), 1, xzplane, pid - 2, pid,
-                         (void *) (a0 + (y_start - 1) * ldx), 1, xzplane, pid - 2,
-                         pid - 2, MPI_COMM_WORLD, &status);
+        } else if ((pid / grid_info->num_x) % grid_info->num_y == grid_info->num_y - 1) {
+            MPI_Sendrecv((void *) (a0 + y_start * ldx), 1, xzplane, pid - grid_info->num_x, pid,
+                         (void *) (a0 + (y_start - 1) * ldx), 1, xzplane, pid - grid_info->num_x,
+                         pid - grid_info->num_x, MPI_COMM_WORLD, &status);
         } else {
-            MPI_Sendrecv((void *) (a0 + y_start * ldx), 1, xzplane, pid - 2, pid,
-                         (void *) (a0 + (y_start - 1) * ldx), 1, xzplane, pid - 2,
-                         pid - 2, MPI_COMM_WORLD, &status);
-            MPI_Sendrecv((void *) (a0 + (y_end - 1) * ldx), 1, xzplane, pid + 2, pid,
-                         (void *) (a0 + y_end * ldx), 1, xzplane, pid + 2, pid + 2,
+            MPI_Sendrecv((void *) (a0 + y_start * ldx), 1, xzplane, pid - grid_info->num_x, pid,
+                         (void *) (a0 + (y_start - 1) * ldx), 1, xzplane, pid - grid_info->num_x,
+                         pid - grid_info->num_x, MPI_COMM_WORLD, &status);
+            MPI_Sendrecv((void *) (a0 + (y_end - 1) * ldx), 1, xzplane, pid + grid_info->num_x, pid,
+                         (void *) (a0 + y_end * ldx), 1, xzplane, pid + grid_info->num_x, pid + grid_info->num_x,
                          MPI_COMM_WORLD, &status);
 
         }
 
         if (pid / grid_info->num_x / grid_info->num_y == 0) { // xy
-            MPI_Sendrecv((void *) (a0 + (z_end - 1) * ldx * ldy), 1, xyplane, pid + 4,
-                         pid, (void *) (a0 + z_end * ldx * ldy), 1, xyplane, pid + 4,
-                         pid + 4, MPI_COMM_WORLD, &status);
-        } else if(pid / grid_info->num_x / grid_info->num_y == grid_info->num_z - 1){
-            MPI_Sendrecv((void *) (a0 + z_start * ldx * ldy), 1, xyplane, pid - 4, pid,
+            MPI_Sendrecv((void *) (a0 + (z_end - 1) * ldx * ldy), 1, xyplane, pid + grid_info->num_x * grid_info->num_y,
+                         pid, (void *) (a0 + z_end * ldx * ldy), 1, xyplane, pid + grid_info->num_x * grid_info->num_y,
+                         pid + grid_info->num_x * grid_info->num_y, MPI_COMM_WORLD, &status);
+        } else if (pid / grid_info->num_x / grid_info->num_y == grid_info->num_z - 1) {
+            MPI_Sendrecv((void *) (a0 + z_start * ldx * ldy), 1, xyplane, pid - grid_info->num_x * grid_info->num_y,
+                         pid,
                          (void *) (a0 + (z_start - 1) * ldx * ldy), 1, xyplane,
-                         pid - 4, pid - 4, MPI_COMM_WORLD, &status);
+                         pid - grid_info->num_x * grid_info->num_y, pid - grid_info->num_x * grid_info->num_y,
+                         MPI_COMM_WORLD, &status);
         } else {
-            MPI_Sendrecv((void *) (a0 + (z_end - 1) * ldx * ldy), 1, xyplane, pid + 4,
-                         pid, (void *) (a0 + z_end * ldx * ldy), 1, xyplane, pid + 4,
-                         pid + 4, MPI_COMM_WORLD, &status);
-            MPI_Sendrecv((void *) (a0 + z_start * ldx * ldy), 1, xyplane, pid - 4, pid,
+            MPI_Sendrecv((void *) (a0 + (z_end - 1) * ldx * ldy), 1, xyplane, pid + grid_info->num_x * grid_info->num_y,
+                         pid, (void *) (a0 + z_end * ldx * ldy), 1, xyplane, pid + grid_info->num_x * grid_info->num_y,
+                         pid + grid_info->num_x * grid_info->num_y, MPI_COMM_WORLD, &status);
+            MPI_Sendrecv((void *) (a0 + z_start * ldx * ldy), 1, xyplane, pid - grid_info->num_x * grid_info->num_y,
+                         pid,
                          (void *) (a0 + (z_start - 1) * ldx * ldy), 1, xyplane,
-                         pid - 4, pid - 4, MPI_COMM_WORLD, &status);
+                         pid - grid_info->num_x * grid_info->num_y, pid - grid_info->num_x * grid_info->num_y,
+                         MPI_COMM_WORLD, &status);
 
         }
 
         //y or x can be expand manually
-        for(int z = z_start; z < z_end; ++z) {
-            for(int y = y_start; y < y_end; ++y) {
-                for(int x = x_start; x < x_end; ++x) {
-                    a1[INDEX(x, y, z, ldx, ldy)] \
-                        = ALPHA_ZZZ * a0[INDEX(x, y, z, ldx, ldy)] \
-                        + ALPHA_NZZ * a0[INDEX(x-1, y, z, ldx, ldy)] \
-                        + ALPHA_PZZ * a0[INDEX(x+1, y, z, ldx, ldy)] \
-                        + ALPHA_ZNZ * a0[INDEX(x, y-1, z, ldx, ldy)] \
-                        + ALPHA_ZPZ * a0[INDEX(x, y+1, z, ldx, ldy)] \
-                        + ALPHA_ZZN * a0[INDEX(x, y, z-1, ldx, ldy)] \
-                        + ALPHA_ZZP * a0[INDEX(x, y, z+1, ldx, ldy)];
+        for (int z = z_start; z < z_end; ++z) {
+            for (int y = y_start; y < y_end; ++y) {
+                for (int x = x_start; x < x_end; ++x) {
+                    a1[INDEX(x, y, z, ldx, ldy)]
+                            = ALPHA_ZZZ * a0[INDEX(x, y, z, ldx, ldy)]
+                              + ALPHA_NZZ * a0[INDEX(x - 1, y, z, ldx, ldy)]
+                              + ALPHA_PZZ * a0[INDEX(x + 1, y, z, ldx, ldy)]
+                              + ALPHA_ZNZ * a0[INDEX(x, y - 1, z, ldx, ldy)]
+                              + ALPHA_ZPZ * a0[INDEX(x, y + 1, z, ldx, ldy)]
+                              + ALPHA_ZZN * a0[INDEX(x, y, z - 1, ldx, ldy)]
+                              + ALPHA_ZZP * a0[INDEX(x, y, z + 1, ldx, ldy)];
                 }
             }
         }
@@ -191,7 +195,7 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
             MPI_Sendrecv((void *) (a0 + x_end - 1), 1, yzplane, pid + 1, pid,
                          (void *) (a0 + x_end), 1, yzplane, pid + 1, pid + 1,
                          MPI_COMM_WORLD, &status);
-        } else if (pid % grid_info->num_x == grid_info->num_x - 1){
+        } else if (pid % grid_info->num_x == grid_info->num_x - 1) {
             MPI_Sendrecv((void *) (a0 + x_start), 1, yzplane, pid - 1, pid,
                          (void *) (a0 + x_start - 1), 1, yzplane, pid - 1, pid - 1,
                          MPI_COMM_WORLD, &status);
@@ -205,73 +209,77 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
         }
 
         if ((pid / grid_info->num_x) % grid_info->num_y == 0) { // xz
-            MPI_Sendrecv((void *) (a0 + (y_end - 1) * ldx), 1, xzplane, pid + 2, pid,
-                         (void *) (a0 + y_end * ldx), 1, xzplane, pid + 2, pid + 2,
+            MPI_Sendrecv((void *) (a0 + (y_end - 1) * ldx), 1, xzplane, pid + grid_info->num_x, pid,
+                         (void *) (a0 + y_end * ldx), 1, xzplane, pid + grid_info->num_x, pid + grid_info->num_x,
                          MPI_COMM_WORLD, &status);
-        } else if ((pid / grid_info->num_x) % grid_info->num_y == grid_info->num_y - 1){
-            MPI_Sendrecv((void *) (a0 + y_start * ldx), 1, xzplane, pid - 2, pid,
-                         (void *) (a0 + (y_start - 1) * ldx), 1, xzplane, pid - 2,
-                         pid - 2, MPI_COMM_WORLD, &status);
+        } else if ((pid / grid_info->num_x) % grid_info->num_y == grid_info->num_y - 1) {
+            MPI_Sendrecv((void *) (a0 + y_start * ldx), 1, xzplane, pid - grid_info->num_x, pid,
+                         (void *) (a0 + (y_start - 1) * ldx), 1, xzplane, pid - grid_info->num_x,
+                         pid - grid_info->num_x, MPI_COMM_WORLD, &status);
         } else {
-            MPI_Sendrecv((void *) (a0 + y_start * ldx), 1, xzplane, pid - 2, pid,
-                         (void *) (a0 + (y_start - 1) * ldx), 1, xzplane, pid - 2,
-                         pid - 2, MPI_COMM_WORLD, &status);
-            MPI_Sendrecv((void *) (a0 + (y_end - 1) * ldx), 1, xzplane, pid + 2, pid,
-                         (void *) (a0 + y_end * ldx), 1, xzplane, pid + 2, pid + 2,
+            MPI_Sendrecv((void *) (a0 + y_start * ldx), 1, xzplane, pid - grid_info->num_x, pid,
+                         (void *) (a0 + (y_start - 1) * ldx), 1, xzplane, pid - grid_info->num_x,
+                         pid - grid_info->num_x, MPI_COMM_WORLD, &status);
+            MPI_Sendrecv((void *) (a0 + (y_end - 1) * ldx), 1, xzplane, pid + grid_info->num_x, pid,
+                         (void *) (a0 + y_end * ldx), 1, xzplane, pid + grid_info->num_x, pid + grid_info->num_x,
                          MPI_COMM_WORLD, &status);
 
         }
 
         if (pid / grid_info->num_x / grid_info->num_y == 0) { // xy
-            MPI_Sendrecv((void *) (a0 + (z_end - 1) * ldx * ldy), 1, xyplane, pid + 4,
-                         pid, (void *) (a0 + z_end * ldx * ldy), 1, xyplane, pid + 4,
-                         pid + 4, MPI_COMM_WORLD, &status);
-        } else if(pid / grid_info->num_x / grid_info->num_y == grid_info->num_z - 1){
-            MPI_Sendrecv((void *) (a0 + z_start * ldx * ldy), 1, xyplane, pid - 4, pid,
+            MPI_Sendrecv((void *) (a0 + (z_end - 1) * ldx * ldy), 1, xyplane, pid + grid_info->num_x * grid_info->num_y,
+                         pid, (void *) (a0 + z_end * ldx * ldy), 1, xyplane, pid + grid_info->num_x * grid_info->num_y,
+                         pid + grid_info->num_x * grid_info->num_y, MPI_COMM_WORLD, &status);
+        } else if (pid / grid_info->num_x / grid_info->num_y == grid_info->num_z - 1) {
+            MPI_Sendrecv((void *) (a0 + z_start * ldx * ldy), 1, xyplane, pid - grid_info->num_x * grid_info->num_y,
+                         pid,
                          (void *) (a0 + (z_start - 1) * ldx * ldy), 1, xyplane,
-                         pid - 4, pid - 4, MPI_COMM_WORLD, &status);
+                         pid - grid_info->num_x * grid_info->num_y, pid - grid_info->num_x * grid_info->num_y,
+                         MPI_COMM_WORLD, &status);
         } else {
-            MPI_Sendrecv((void *) (a0 + (z_end - 1) * ldx * ldy), 1, xyplane, pid + 4,
-                         pid, (void *) (a0 + z_end * ldx * ldy), 1, xyplane, pid + 4,
-                         pid + 4, MPI_COMM_WORLD, &status);
-            MPI_Sendrecv((void *) (a0 + z_start * ldx * ldy), 1, xyplane, pid - 4, pid,
+            MPI_Sendrecv((void *) (a0 + (z_end - 1) * ldx * ldy), 1, xyplane, pid + grid_info->num_x * grid_info->num_y,
+                         pid, (void *) (a0 + z_end * ldx * ldy), 1, xyplane, pid + grid_info->num_x * grid_info->num_y,
+                         pid + grid_info->num_x * grid_info->num_y, MPI_COMM_WORLD, &status);
+            MPI_Sendrecv((void *) (a0 + z_start * ldx * ldy), 1, xyplane, pid - grid_info->num_x * grid_info->num_y,
+                         pid,
                          (void *) (a0 + (z_start - 1) * ldx * ldy), 1, xyplane,
-                         pid - 4, pid - 4, MPI_COMM_WORLD, &status);
+                         pid - grid_info->num_x * grid_info->num_y, pid - grid_info->num_x * grid_info->num_y,
+                         MPI_COMM_WORLD, &status);
 
         }
 
         //y or x can be expand manually
-        for(int z = z_start; z < z_end; ++z) {
-            for(int y = y_start; y < y_end; ++y) {
-                for(int x = x_start; x < x_end; ++x) {
-                    a1[INDEX(x, y, z, ldx, ldy)] \
-                        = ALPHA_ZZZ * a0[INDEX(x, y, z, ldx, ldy)] \
-                        + ALPHA_NZZ * a0[INDEX(x-1, y, z, ldx, ldy)] \
-                        + ALPHA_PZZ * a0[INDEX(x+1, y, z, ldx, ldy)] \
-                        + ALPHA_ZNZ * a0[INDEX(x, y-1, z, ldx, ldy)] \
-                        + ALPHA_ZPZ * a0[INDEX(x, y+1, z, ldx, ldy)] \
-                        + ALPHA_ZZN * a0[INDEX(x, y, z-1, ldx, ldy)] \
-                        + ALPHA_ZZP * a0[INDEX(x, y, z+1, ldx, ldy)] \
-                        + ALPHA_NNZ * a0[INDEX(x-1, y-1, z, ldx, ldy)] \
-                        + ALPHA_PNZ * a0[INDEX(x+1, y-1, z, ldx, ldy)] \
-                        + ALPHA_NPZ * a0[INDEX(x-1, y+1, z, ldx, ldy)] \
-                        + ALPHA_PPZ * a0[INDEX(x+1, y+1, z, ldx, ldy)] \
-                        + ALPHA_NZN * a0[INDEX(x-1, y, z-1, ldx, ldy)] \
-                        + ALPHA_PZN * a0[INDEX(x+1, y, z-1, ldx, ldy)] \
-                        + ALPHA_NZP * a0[INDEX(x-1, y, z+1, ldx, ldy)] \
-                        + ALPHA_PZP * a0[INDEX(x+1, y, z+1, ldx, ldy)] \
-                        + ALPHA_ZNN * a0[INDEX(x, y-1, z-1, ldx, ldy)] \
-                        + ALPHA_ZPN * a0[INDEX(x, y+1, z-1, ldx, ldy)] \
-                        + ALPHA_ZNP * a0[INDEX(x, y-1, z+1, ldx, ldy)] \
-                        + ALPHA_ZPP * a0[INDEX(x, y+1, z+1, ldx, ldy)] \
-                        + ALPHA_NNN * a0[INDEX(x-1, y-1, z-1, ldx, ldy)] \
-                        + ALPHA_PNN * a0[INDEX(x+1, y-1, z-1, ldx, ldy)] \
-                        + ALPHA_NPN * a0[INDEX(x-1, y+1, z-1, ldx, ldy)] \
-                        + ALPHA_PPN * a0[INDEX(x+1, y+1, z-1, ldx, ldy)] \
-                        + ALPHA_NNP * a0[INDEX(x-1, y-1, z+1, ldx, ldy)] \
-                        + ALPHA_PNP * a0[INDEX(x+1, y-1, z+1, ldx, ldy)] \
-                        + ALPHA_NPP * a0[INDEX(x-1, y+1, z+1, ldx, ldy)] \
-                        + ALPHA_PPP * a0[INDEX(x+1, y+1, z+1, ldx, ldy)];
+        for (int z = z_start; z < z_end; ++z) {
+            for (int y = y_start; y < y_end; ++y) {
+                for (int x = x_start; x < x_end; ++x) {
+                    a1[INDEX(x, y, z, ldx, ldy)]
+                            = ALPHA_ZZZ * a0[INDEX(x, y, z, ldx, ldy)]
+                              + ALPHA_NZZ * a0[INDEX(x - 1, y, z, ldx, ldy)]
+                              + ALPHA_PZZ * a0[INDEX(x + 1, y, z, ldx, ldy)]
+                              + ALPHA_ZNZ * a0[INDEX(x, y - 1, z, ldx, ldy)]
+                              + ALPHA_ZPZ * a0[INDEX(x, y + 1, z, ldx, ldy)]
+                              + ALPHA_ZZN * a0[INDEX(x, y, z - 1, ldx, ldy)]
+                              + ALPHA_ZZP * a0[INDEX(x, y, z + 1, ldx, ldy)]
+                              + ALPHA_NNZ * a0[INDEX(x - 1, y - 1, z, ldx, ldy)]
+                              + ALPHA_PNZ * a0[INDEX(x + 1, y - 1, z, ldx, ldy)]
+                              + ALPHA_NPZ * a0[INDEX(x - 1, y + 1, z, ldx, ldy)]
+                              + ALPHA_PPZ * a0[INDEX(x + 1, y + 1, z, ldx, ldy)]
+                              + ALPHA_NZN * a0[INDEX(x - 1, y, z - 1, ldx, ldy)]
+                              + ALPHA_PZN * a0[INDEX(x + 1, y, z - 1, ldx, ldy)]
+                              + ALPHA_NZP * a0[INDEX(x - 1, y, z + 1, ldx, ldy)]
+                              + ALPHA_PZP * a0[INDEX(x + 1, y, z + 1, ldx, ldy)]
+                              + ALPHA_ZNN * a0[INDEX(x, y - 1, z - 1, ldx, ldy)]
+                              + ALPHA_ZPN * a0[INDEX(x, y + 1, z - 1, ldx, ldy)]
+                              + ALPHA_ZNP * a0[INDEX(x, y - 1, z + 1, ldx, ldy)]
+                              + ALPHA_ZPP * a0[INDEX(x, y + 1, z + 1, ldx, ldy)]
+                              + ALPHA_NNN * a0[INDEX(x - 1, y - 1, z - 1, ldx, ldy)]
+                              + ALPHA_PNN * a0[INDEX(x + 1, y - 1, z - 1, ldx, ldy)]
+                              + ALPHA_NPN * a0[INDEX(x - 1, y + 1, z - 1, ldx, ldy)]
+                              + ALPHA_PPN * a0[INDEX(x + 1, y + 1, z - 1, ldx, ldy)]
+                              + ALPHA_NNP * a0[INDEX(x - 1, y - 1, z + 1, ldx, ldy)]
+                              + ALPHA_PNP * a0[INDEX(x + 1, y - 1, z + 1, ldx, ldy)]
+                              + ALPHA_NPP * a0[INDEX(x - 1, y + 1, z + 1, ldx, ldy)]
+                              + ALPHA_PPP * a0[INDEX(x + 1, y + 1, z + 1, ldx, ldy)];
                 }
             }
         }
