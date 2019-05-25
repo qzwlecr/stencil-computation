@@ -3,7 +3,6 @@
 #include "cal.h"
 #include "common.h"
 
-
 #define DUMP(varname) cal_locked_printf("[%d][%d]%s = %d\n", pid, id, #varname, varname);
 
 #define LENGTH (384+2)
@@ -43,11 +42,15 @@ void stencil_7_com(param *p) {
 //    }
 
     ptr_t src, dest;
+    int nt = p->nt;
+    if(pid == 0 && id == 0){
+        DUMP(nt);
+    }
 
     // cache strategy is full x, splited y, zero z
     // maybe too slow when block size is small
 
-    for (int t = 0; t < p->nt; t++) {
+    for (int t = 0; t < nt; t++) {
         while (*p->sync == 0);
         //DUMP(*p->sync);
         src = *p->src, dest = *p->dest;
@@ -83,9 +86,10 @@ void stencil_7_com(param *p) {
                 while (put_reply != 1);
             }
         }
-        cal_global_lock();
-        (*p->sync)++;
-        cal_global_unlock();
+        athread_syn(ARRAY_SCOPE, 0xffff);
+        if(id == 0){
+            *p->sync = 0;
+        }
     }
     return;
 }
@@ -124,11 +128,15 @@ void stencil_27_com(param *p) {
 //    }
 
     ptr_t src, dest;
+    int nt = p->nt;
+    if(pid == 0 && id == 0){
+        DUMP(nt);
+    }
 
     // cache strategy is full x, splited y, zero z
     // maybe too slow when block size is small
 
-    for (int t = 0; t < p->nt; t++) {
+    for (int t = 0; t < nt; t++) {
         while (*p->sync == 0);
         //DUMP(*p->sync);
         src = *p->src, dest = *p->dest;
@@ -184,9 +192,10 @@ void stencil_27_com(param *p) {
                 while (put_reply != 1);
             }
         }
-        cal_global_lock();
-        (*p->sync)++;
-        cal_global_unlock();
+        athread_syn(ARRAY_SCOPE, 0xffff);
+        if(id == 0){
+            *p->sync = 0;
+        }
     }
     return;
 }

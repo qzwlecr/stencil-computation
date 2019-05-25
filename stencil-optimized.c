@@ -34,6 +34,10 @@ void create_dist_grid(dist_grid_info_t *grid_info, int stencil_type) {
     grid_info->halo_size_y = 1;
     grid_info->halo_size_z = 1;
     athread_init();
+    int spe_cnt = athread_get_max_threads();
+    if (spe_cnt != 64){
+        printf("This CG cannot afford 64 SPEs (%d only).\n", spe_cnt);
+    }
 
     fprintf(stderr, "Init dist grid: %d\n", grid_info->p_id);
     //DUMP(grid_info->offset_x);
@@ -143,8 +147,7 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
 
         }
         sync = 1;
-        while(sync != 65);
-        sync = 0;
+        while(sync != 0);
 
     }
     athread_join();
@@ -248,8 +251,7 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
 
         }
         sync = 1;
-        while(sync != 65);
-        sync = 0;
+        while(sync != 0);
 
     }
     athread_join();
