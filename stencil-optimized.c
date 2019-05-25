@@ -1,15 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
-#include <athread.h>
+#include "athread.h"
 #include "common.h"
 
-//#define DUMP(varname) fprintf(stderr, "[%d]%s = %d\n", grid_info->p_id, #varname, varname);
+#define DUMP(varname) fprintf(stderr, "[%d]%s = %d\n", grid_info->p_id, #varname, varname);
+#define DUMPF(varname) fprintf(stderr, "[%d]%s = %lf\n", grid_info->p_id, #varname, varname);
 
 const char *version_name = "Optimized version";
 
-extern SLAVE_FUN(stencil_7_com)(param *);
-extern SLAVE_FUN(stencil_27_com)(param *);
+extern SLAVE_FUN(stencil_7_com)(grid_param *);
+extern SLAVE_FUN(stencil_27_com)(grid_param *);
 
 volatile int sync = 0;
 
@@ -35,20 +36,16 @@ void create_dist_grid(dist_grid_info_t *grid_info, int stencil_type) {
     grid_info->halo_size_z = 1;
     athread_init();
     int spe_cnt = athread_get_max_threads();
-    if (spe_cnt != 64){
+    if (spe_cnt != 64) {
         printf("This CG cannot afford 64 SPEs (%d only).\n", spe_cnt);
     }
 
     fprintf(stderr, "Init dist grid: %d\n", grid_info->p_id);
-    //DUMP(grid_info->offset_x);
-    //DUMP(grid_info->offset_y);
-    //DUMP(grid_info->offset_z);
 }
 
 /* your implementation */
 void destroy_dist_grid(dist_grid_info_t *grid_info) {
     athread_halt();
-
 }
 
 /* your implementation */
@@ -77,7 +74,7 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
 
     int pid = grid_info->p_id;
     ptr_t a0, a1;
-    param p = {
+    grid_param p = {
             .src = &a0,
             .dest = &a1,
             .nt = nt,
@@ -147,7 +144,7 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
 
         }
         sync = 1;
-        while(sync != 0);
+        while (sync == 1);
 
     }
     athread_join();
@@ -181,14 +178,14 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
 
     int pid = grid_info->p_id;
     ptr_t a0, a1;
-    param p = {
+    grid_param p = {
             .src = &a0,
             .dest = &a1,
             .nt = nt,
             .sync = &sync,
             .grid_info = grid_info
     };
-    athread_spawn(stencil_7_com, &p);
+    athread_spawn(stencil_27_com, &p);
 
     for (int t = 0; t < nt; ++t) {
         a0 = buffer[t % 2];
@@ -251,7 +248,7 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
 
         }
         sync = 1;
-        while(sync != 0);
+        while (sync == 1);
 
     }
     athread_join();

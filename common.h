@@ -33,8 +33,8 @@
 #define INDEX(xx, yy, zz, ldxx, ldyy) ((xx) + (ldxx) * ((yy) + (ldyy) * (zz)))
 
 typedef double data_t;
-typedef data_t* ptr_t;
-typedef const data_t* cptr_t;
+typedef data_t *ptr_t;
+typedef const data_t *cptr_t;
 #define DATA_TYPE MPI_DOUBLE
 
 /* 
@@ -60,17 +60,20 @@ typedef struct {
 typedef struct {
     ptr_t *src, *dest;
     volatile int nt;
-    volatile int * sync;
+    volatile int *sync;
     const dist_grid_info_t *grid_info;
-} param;
+} grid_param;
 
 /* type == 7 or type == 27 */
 void create_dist_grid(dist_grid_info_t *info, int stencil_type);
+
 void destroy_dist_grid(dist_grid_info_t *info);
+
 /* `arr` is the input array, `aux` is an auxiliary buffer
  * return the pointer to the output array
  * the returned value should be either equal to `arr` or `aux` */
 ptr_t stencil_7(ptr_t arr, ptr_t aux, const dist_grid_info_t *info, int nt);
+
 ptr_t stencil_27(ptr_t arr, ptr_t aux, const dist_grid_info_t *info, int nt);
 
 #endif

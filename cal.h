@@ -1,5 +1,5 @@
 #include <stdarg.h>
-#include <slave.h>
+#include "slave.h"
 typedef struct cal_lock{
   int req, cur;
 } cal_lock_t;

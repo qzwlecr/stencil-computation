@@ -4,11 +4,13 @@
   "arguments": [
    "gcc",
    "-c",
+   "-g",
+   "-I./include",
    "-Wall",
-   "-std=c99",
+   "-std=gnu99",
    "check.c",
    "-o",
-   "benchmark.o"
+   "check.o"
   ],
   "file": "check.c"
  },
@@ -17,8 +19,10 @@
   "arguments": [
    "gcc",
    "-c",
+   "-g",
+   "-I./include",
    "-Wall",
-   "-std=c99",
+   "-std=gnu99",
    "benchmark.c",
    "-o",
    "benchmark.o"
@@ -30,8 +34,10 @@
   "arguments": [
    "gcc",
    "-c",
+   "-g",
+   "-I./include",
    "-Wall",
-   "-std=c99",
+   "-std=gnu99",
    "stencil-naive.c",
    "-o",
    "stencil-naive.o"
@@ -43,8 +49,10 @@
   "arguments": [
    "gcc",
    "-c",
+   "-g",
+   "-I./include",
    "-Wall",
-   "-std=c99",
+   "-std=gnu99",
    "stencil-optimized.c",
    "-o",
    "stencil-optimized.o"
@@ -56,11 +64,14 @@
   "arguments": [
    "gcc",
    "-c",
+   "-g",
+   "-I./include",
    "-Wall",
-   "-std=c99",
+   "-std=gnu99",
    "stencil-slave.c",
    "-o",
-   "stencil-slave.o"
+   "stencil-slave.o",
+   "-lm"
   ],
   "file": "stencil-slave.c"
  }

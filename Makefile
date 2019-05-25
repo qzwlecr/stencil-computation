@@ -1,7 +1,7 @@
 CC = mpicc
 SWCC = sw5cc
 OPT =
-CFLAGS = -g -Wall -std=gnu99 $(OPT) -OPT:IEEE_arith=1
+CFLAGS = -g -I./include -Wall -std=gnu99 $(OPT) -OPT:IEEE_arith=1
 LDFLAGS = -Wall -Wl,--whole-archive,-wrap,athread_init,-wrap,__expt_handler,-wrap,__real_athread_spawn /home/export/online1/swmore/release/lib/libspc.a -Wl,--no-whole-archive
 LDLIBS = $(LDFLAGS)
 
