@@ -43,11 +43,11 @@ void stencil_7_com(grid_param *p) {
         while (*p->sync == 0);
         src = *p->src, dest = *p->dest;
         for (int zz = z_begin; zz < z_end; zz += 2) {
-            for (int yy = y_begin; yy < y_end; yy += 2) {
+            for (int yy = y_begin; yy < y_end - 1; yy += 2) {
 
                 get_reply = 0;
                 athread_get(PE_MODE, &src[INDEX(0, yy - 1, zz - 1, ldx, ldy)], &origin, ldx * 16 * sizeof(data_t),
-                            &get_reply, 0, ldx * (ldy - 4) * sizeof(data_t), ldx * 4 * sizeof(data_t));
+                            (void *) &get_reply, 0, ldx * (ldy - 4) * sizeof(data_t), ldx * 4 * sizeof(data_t));
                 while (get_reply != 1);
 
                 for (int z = 1; z <= 2; ++z) {
@@ -69,8 +69,37 @@ void stencil_7_com(grid_param *p) {
 
                 put_reply = 0;
                 athread_put(PE_MODE, &answer, &dest[INDEX(0, yy, zz, ldx, ldy)], ldx * 4 * sizeof(data_t),
-                            &put_reply, ldx * (ldy - 2) * sizeof(data_t), ldx * 2 * sizeof(data_t));
+                            (void *) &put_reply, ldx * (ldy - 2) * sizeof(data_t), ldx * 2 * sizeof(data_t));
                 while (put_reply != 1);
+            }
+            if (y_size % 2 == 1){
+                get_reply = 0;
+                athread_get(PE_MODE, &src[INDEX(0, y_end - 2, zz - 1, ldx, ldy)], &origin, ldx * 12 * sizeof(data_t),
+                            (void *) &get_reply, 0, ldx * (ldy - 3) * sizeof(data_t), ldx * 3 * sizeof(data_t));
+                while (get_reply != 1);
+
+                for (int z = 1; z <= 2; ++z) {
+                    for (int y = 1; y <= 1; ++y) {
+                        for (int x = x_begin; x < x_end; ++x) {
+                            answer[INDEX(x, y - 1, z - 1, ldx, 1)] =
+                                    ALPHA_ZZZ * origin[INDEX(x, y, z, ldx, 3)]
+                                    + ALPHA_NZZ * origin[INDEX(x - 1, y, z, ldx, 3)]
+                                    + ALPHA_PZZ * origin[INDEX(x + 1, y, z, ldx, 3)]
+                                    + ALPHA_ZNZ * origin[INDEX(x, y - 1, z, ldx, 3)]
+                                    + ALPHA_ZPZ * origin[INDEX(x, y + 1, z, ldx, 3)]
+                                    + ALPHA_ZZN * origin[INDEX(x, y, z - 1, ldx, 3)]
+                                    + ALPHA_ZZP * origin[INDEX(x, y, z + 1, ldx, 3)];
+
+                        }
+
+                    }
+                }
+
+                put_reply = 0;
+                athread_put(PE_MODE, &answer, &dest[INDEX(0, y_end - 1, zz, ldx, ldy)], ldx * 2 * sizeof(data_t),
+                            (void *) &put_reply, ldx * (ldy - 1) * sizeof(data_t), ldx * 1 * sizeof(data_t));
+                while (put_reply != 1);
+
             }
         }
         athread_syn(ARRAY_SCOPE, 0xffff);
@@ -116,11 +145,11 @@ void stencil_27_com(grid_param *p) {
         while (*p->sync == 0);
         src = *p->src, dest = *p->dest;
         for (int zz = z_begin; zz < z_end; zz += 2) {
-            for (int yy = y_begin; yy < y_end; yy += 2) {
+            for (int yy = y_begin; yy < y_end - 1; yy += 2) {
 
                 get_reply = 0;
                 athread_get(PE_MODE, &src[INDEX(0, yy - 1, zz - 1, ldx, ldy)], &origin, ldx * 16 * sizeof(data_t),
-                            &get_reply, 0, ldx * (ldy - 4) * sizeof(data_t), ldx * 4 * sizeof(data_t));
+                            (void *) &get_reply, 0, ldx * (ldy - 4) * sizeof(data_t), ldx * 4 * sizeof(data_t));
                 while (get_reply != 1);
 
                 for (int z = 1; z <= 2; ++z) {
@@ -162,8 +191,58 @@ void stencil_27_com(grid_param *p) {
 
                 put_reply = 0;
                 athread_put(PE_MODE, &answer, &dest[INDEX(0, yy, zz, ldx, ldy)], ldx * 4 * sizeof(data_t),
-                            &put_reply, ldx * (ldy - 2) * sizeof(data_t), ldx * 2 * sizeof(data_t));
+                            (void *) &put_reply, ldx * (ldy - 2) * sizeof(data_t), ldx * 2 * sizeof(data_t));
                 while (put_reply != 1);
+            }
+
+            if (y_size % 2 == 1){
+                get_reply = 0;
+                athread_get(PE_MODE, &src[INDEX(0, y_end - 2, zz - 1, ldx, ldy)], &origin, ldx * 12 * sizeof(data_t),
+                            (void *) &get_reply, 0, ldx * (ldy - 3) * sizeof(data_t), ldx * 3 * sizeof(data_t));
+                while (get_reply != 1);
+
+                for (int z = 1; z <= 2; ++z) {
+                    for (int y = 1; y <= 1; ++y) {
+                        for (int x = x_begin; x < x_end; ++x) {
+                            answer[INDEX(x, y - 1, z - 1, ldx, 1)] =
+                                    ALPHA_ZZZ * origin[INDEX(x, y, z, ldx, 3)]
+                                    + ALPHA_NZZ * origin[INDEX(x - 1, y, z, ldx, 3)]
+                                    + ALPHA_PZZ * origin[INDEX(x + 1, y, z, ldx, 3)]
+                                    + ALPHA_ZNZ * origin[INDEX(x, y - 1, z, ldx, 3)]
+                                    + ALPHA_ZPZ * origin[INDEX(x, y + 1, z, ldx, 3)]
+                                    + ALPHA_ZZN * origin[INDEX(x, y, z - 1, ldx, 3)]
+                                    + ALPHA_ZZP * origin[INDEX(x, y, z + 1, ldx, 3)]
+                                    + ALPHA_NNZ * origin[INDEX(x - 1, y - 1, z, ldx, 3)]
+                                    + ALPHA_PNZ * origin[INDEX(x + 1, y - 1, z, ldx, 3)]
+                                    + ALPHA_NPZ * origin[INDEX(x - 1, y + 1, z, ldx, 3)]
+                                    + ALPHA_PPZ * origin[INDEX(x + 1, y + 1, z, ldx, 3)]
+                                    + ALPHA_NZN * origin[INDEX(x - 1, y, z - 1, ldx, 3)]
+                                    + ALPHA_PZN * origin[INDEX(x + 1, y, z - 1, ldx, 3)]
+                                    + ALPHA_NZP * origin[INDEX(x - 1, y, z + 1, ldx, 3)]
+                                    + ALPHA_PZP * origin[INDEX(x + 1, y, z + 1, ldx, 3)]
+                                    + ALPHA_ZNN * origin[INDEX(x, y - 1, z - 1, ldx, 3)]
+                                    + ALPHA_ZPN * origin[INDEX(x, y + 1, z - 1, ldx, 3)]
+                                    + ALPHA_ZNP * origin[INDEX(x, y - 1, z + 1, ldx, 3)]
+                                    + ALPHA_ZPP * origin[INDEX(x, y + 1, z + 1, ldx, 3)]
+                                    + ALPHA_NNN * origin[INDEX(x - 1, y - 1, z - 1, ldx, 3)]
+                                    + ALPHA_PNN * origin[INDEX(x + 1, y - 1, z - 1, ldx, 3)]
+                                    + ALPHA_NPN * origin[INDEX(x - 1, y + 1, z - 1, ldx, 3)]
+                                    + ALPHA_PPN * origin[INDEX(x + 1, y + 1, z - 1, ldx, 3)]
+                                    + ALPHA_NNP * origin[INDEX(x - 1, y - 1, z + 1, ldx, 3)]
+                                    + ALPHA_PNP * origin[INDEX(x + 1, y - 1, z + 1, ldx, 3)]
+                                    + ALPHA_NPP * origin[INDEX(x - 1, y + 1, z + 1, ldx, 3)]
+                                    + ALPHA_PPP * origin[INDEX(x + 1, y + 1, z + 1, ldx, 3)];
+
+                        }
+
+                    }
+                }
+
+                put_reply = 0;
+                athread_put(PE_MODE, &answer, &dest[INDEX(0, y_end - 1, zz, ldx, ldy)], ldx * 2 * sizeof(data_t),
+                            (void *) &put_reply, ldx * (ldy - 1) * sizeof(data_t), ldx * 1 * sizeof(data_t));
+                while (put_reply != 1);
+
             }
         }
         athread_syn(ARRAY_SCOPE, 0xffff);
