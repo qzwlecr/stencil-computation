@@ -4,6 +4,14 @@
 #include "athread.h"
 #include "common.h"
 
+//#define PROFILING
+
+#ifdef PROFILING
+#define MPE
+#define LWPF_UNITS U(TEST)
+#include "lwpf2.h"
+#endif
+
 #define DUMP(varname) fprintf(stderr, "[%d]%s = %d\n", grid_info->p_id, #varname, varname);
 #define DUMPF(varname) fprintf(stderr, "[%d]%s = %lf\n", grid_info->p_id, #varname, varname);
 
@@ -15,6 +23,9 @@ extern SLAVE_FUN(stencil_27_com)(grid_param
 *);
 
 volatile int sync = 0;
+#ifdef PROFILING
+perf_config_t conf; //以下是初始化采样选项的代码
+#endif
 
 /* your implementation */
 void create_dist_grid(dist_grid_info_t *grid_info, int stencil_type) {
@@ -41,6 +52,13 @@ void create_dist_grid(dist_grid_info_t *grid_info, int stencil_type) {
     if (spe_cnt != 64) {
         printf("This CG cannot afford 64 SPEs (%d only).\n", spe_cnt);
     }
+#ifdef PROFILING
+    conf.pcrc = PCRC_ALL;
+    conf.pcr0 = PC0_CYCLE;
+    conf.pcr1 = PC1_CYCLE;
+    conf.pcr2 = PC2_CNT_GLD;
+    lwpf_init(&conf); //调用lwpf_init对计数器数据和选项进行初始化.
+#endif
 
     fprintf(stderr, "Init dist grid: %d\n", grid_info->p_id);
 }
@@ -161,6 +179,11 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
 
     }
     athread_join();
+#ifdef PROFILING
+    if(pid == 0){
+        lwpf_report_detail(stdout, &conf); //输出最详细的数据
+    }
+#endif
     fprintf(stderr, "[%d]Stencil 7 computing done\n", grid_info->p_id);
     return buffer[nt % 2];
 }

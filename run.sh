@@ -48,4 +48,5 @@ if [[ `expr "${RUN_MASK} % 10"` -eq "1" ]];then
 fi
 
 ln -s -f ${LOG_DIR} .
+rm -rf ${LOG_NOW}
 ln -s -f ${LOG_DIR} ${LOG_NOW}
