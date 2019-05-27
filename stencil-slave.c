@@ -1,5 +1,5 @@
 #include <string.h>
-#include "slave.h"
+#include <slave.h>
 #include "cal.h"
 #include "common.h"
 
@@ -47,15 +47,15 @@ void stencil_7_com(grid_param *p) {
     int ori_size, ans_size;
     //hardcode to satisfy ldm memory size
     if (x_size == 256) {
-        ori_size = 4;
-        ans_size = 2;
+        ori_size = 3;
+        ans_size = 1;
     } else {
         if (x_size == 192) {
-            ori_size = 5;
-            ans_size = 3;
+            ori_size = 3;
+            ans_size = 1;
         } else {
-            cal_locked_printf("x size is not as expected...\n");
-            return;
+            ori_size = 3;
+            ans_size = 1;
         }
     }
     data_t origin[ldx * ori_size * ori_size];
@@ -67,11 +67,18 @@ void stencil_7_com(grid_param *p) {
             for (int yy = y_begin; yy < y_end; yy += ans_size) {
 
                 get_reply = 0;
-                athread_get(PE_MODE, &src[INDEX(0, yy - 1, zz - 1, ldx, ldy)], origin,
-                            ldx * ori_size * ori_size * sizeof(data_t),
-                            (void *) &get_reply, 0, ldx * (ldy - ori_size) * sizeof(data_t),
-                            ldx * ori_size * sizeof(data_t));
-                while (get_reply != 1);
+//                athread_get(PE_MODE, &src[INDEX(0, yy - 1, zz - 1, ldx, ldy)], origin,
+//                            ldx * ori_size * ori_size * sizeof(data_t),
+//                            (void *) &get_reply, 0, ldx * (ldy - ori_size) * sizeof(data_t),
+//                            ldx * ori_size * sizeof(data_t));
+//order is : mid high low
+                athread_get(PE_MODE, &src[INDEX(0, yy - 1, zz, ldx, ldy)], &origin[INDEX(0, 0, 1, ldx, ori_size)],
+                            ldx * ori_size * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
+                athread_get(PE_MODE, &src[INDEX(0, yy, zz - 1, ldx, ldy)], &origin[INDEX(0, 1, 0, ldx, ori_size)],
+                            ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
+                athread_get(PE_MODE, &src[INDEX(0, yy, zz + 1, ldx, ldy)], &origin[INDEX(0, 1, 2, ldx, ori_size)],
+                            ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
+                while (get_reply != 3);
 
                 for (int z = 1; z <= ans_size; ++z) {
                     for (int y = 1; y <= ans_size; ++y) {
@@ -140,15 +147,15 @@ void stencil_27_com(grid_param *p) {
 
     //hardcode to satisfy ldm memory size
     if (x_size == 256) {
-        ori_size = 4;
-        ans_size = 2;
+        ori_size = 3;
+        ans_size = 1;
     } else {
         if (x_size == 192) {
-            ori_size = 5;
-            ans_size = 3;
+            ori_size = 3;
+            ans_size = 1;
         } else {
-            cal_locked_printf("x size is not as expected...\n");
-            return;
+            ori_size = 3;
+            ans_size = 1;
         }
     }
     data_t origin[ldx * ori_size * ori_size];

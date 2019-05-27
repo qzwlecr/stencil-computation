@@ -30,13 +30,13 @@ perf_config_t conf; //以下是初始化采样选项的代码
 /* your implementation */
 void create_dist_grid(dist_grid_info_t *grid_info, int stencil_type) {
     if (grid_info->p_num == 16) {
-        grid_info->num_x = 2;
-        grid_info->num_y = 2;
-        grid_info->num_z = 4;
+        grid_info->num_x = 1;
+        grid_info->num_y = 1;
+        grid_info->num_z = 16;
     } else {
-        grid_info->num_x = 4;
-        grid_info->num_y = 4;
-        grid_info->num_z = 4;
+        grid_info->num_x = 1;
+        grid_info->num_y = 1;
+        grid_info->num_z = 64;
     }
     grid_info->local_size_x = grid_info->global_size_x / grid_info->num_x;
     grid_info->local_size_y = grid_info->global_size_y / grid_info->num_y;
