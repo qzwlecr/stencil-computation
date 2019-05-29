@@ -71,9 +71,9 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info,
     MPI_Type_commit(&xzplane);
     MPI_Type_vector(1, ldx * ldy, 0, MPI_DOUBLE, &xyplane);
     MPI_Type_commit(&xyplane);
-
+int t;
     int pid = grid_info->p_id;
-    for (int t = 0; t < nt; ++t) {
+    for ( t = 0; t < nt; ++t) {
         cptr_t a0 = buffer[t % 2];
         ptr_t a1 = buffer[(t + 1) % 2];
         MPI_Status status;
@@ -133,11 +133,45 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info,
                          MPI_COMM_WORLD, &status);
 
         }
+        
+//todo matrix [][][]
+int z,y,x;
+// #pragma acc parallel loop  local(z,y,x)  cache(p:200,a0) copyout(a1) collapse(3) tile(z:1,y:1,x:10) //annotate(co_compute)
+//         for ( z = z_start; z < z_end; ++z) {
+//             for ( y = y_start; y < y_end; ++y) {
+//                 for ( x = x_start; x < x_end; ++x) {
+//                     a1[INDEX(x, y, z, ldx, ldy)]
+//                             = ALPHA_ZZZ * a0[INDEX(x, y, z, ldx, ldy)]
+//                               + ALPHA_NZZ * a0[INDEX(x - 1, y, z, ldx, ldy)]
+//                               + ALPHA_PZZ * a0[INDEX(x + 1, y, z, ldx, ldy)]
+//                               + ALPHA_ZNZ * a0[INDEX(x, y - 1, z, ldx, ldy)]
+//                               + ALPHA_ZPZ * a0[INDEX(x, y + 1, z, ldx, ldy)]
+//                               + ALPHA_ZZN * a0[INDEX(x, y, z - 1, ldx, ldy)]
+//                               + ALPHA_ZZP * a0[INDEX(x, y, z + 1, ldx, ldy)];
+//                 }
+//             }
+//         }
 
-        //y or x can be expand manually
-        for (int z = z_start; z < z_end; ++z) {
-            for (int y = y_start; y < y_end; ++y) {
-                for (int x = x_start; x < x_end; ++x) {
+// #pragma acc parallel loop  local(z,y,x)  copyin(a0) copyout(a1) collapse(2) tile(z:1,y:1) //annotate(co_compute)
+//         for ( z = z_start; z < z_end; ++z) {
+//             for ( y = y_start; y < y_end; ++y) {
+//                 for ( x = x_start; x < x_end; ++x) {
+//                     a1[INDEX(x, y, z, ldx, ldy)]
+//                             = ALPHA_ZZZ * a0[INDEX(x, y, z, ldx, ldy)]
+//                               + ALPHA_NZZ * a0[INDEX(x - 1, y, z, ldx, ldy)]
+//                               + ALPHA_PZZ * a0[INDEX(x + 1, y, z, ldx, ldy)]
+//                               + ALPHA_ZNZ * a0[INDEX(x, y - 1, z, ldx, ldy)]
+//                               + ALPHA_ZPZ * a0[INDEX(x, y + 1, z, ldx, ldy)]
+//                               + ALPHA_ZZN * a0[INDEX(x, y, z - 1, ldx, ldy)]
+//                               + ALPHA_ZZP * a0[INDEX(x, y, z + 1, ldx, ldy)];
+//                 }
+//             }
+//         }
+
+#pragma acc parallel loop  local(z,y,x)  copyin(a0) copyout(a1) collapse(3) tile(z:1,y:1,x:3) //annotate(co_compute)
+        for ( z = z_start; z < z_end; ++z) {
+            for ( y = y_start; y < y_end; ++y) {
+                for ( x = x_start; x < x_end; ++x) {
                     a1[INDEX(x, y, z, ldx, ldy)]
                             = ALPHA_ZZZ * a0[INDEX(x, y, z, ldx, ldy)]
                               + ALPHA_NZZ * a0[INDEX(x - 1, y, z, ldx, ldy)]
@@ -149,6 +183,8 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info,
                 }
             }
         }
+
+
     }
     fprintf(stderr, "[%d]Stencil 7 computing done\n", grid_info->p_id);
     return buffer[nt % 2];
@@ -185,9 +221,9 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
     MPI_Type_commit(&xzplane);
     MPI_Type_vector(1, ldx * ldy, 0, MPI_DOUBLE, &xyplane);
     MPI_Type_commit(&xyplane);
-
+int t;
     int pid = grid_info->p_id;
-    for (int t = 0; t < nt; ++t) {
+    for ( t = 0; t < nt; ++t) {
         cptr_t a0 = buffer[t % 2];
         ptr_t a1 = buffer[(t + 1) % 2];
         MPI_Status status;
@@ -247,11 +283,12 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
                          MPI_COMM_WORLD, &status);
 
         }
+int z,y,x;
 
         //y or x can be expand manually
-        for (int z = z_start; z < z_end; ++z) {
-            for (int y = y_start; y < y_end; ++y) {
-                for (int x = x_start; x < x_end; ++x) {
+        for ( z = z_start; z < z_end; ++z) {
+            for ( y = y_start; y < y_end; ++y) {
+                for ( x = x_start; x < x_end; ++x) {
                     a1[INDEX(x, y, z, ldx, ldy)]
                             = ALPHA_ZZZ * a0[INDEX(x, y, z, ldx, ldy)]
                               + ALPHA_NZZ * a0[INDEX(x - 1, y, z, ldx, ldy)]
