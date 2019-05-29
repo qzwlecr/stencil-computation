@@ -1,6 +1,7 @@
 #include <string.h>
 #include <slave.h>
 #include "cal.h"
+#include "time.h"
 #include "common.h"
 
 //#define PROFILING
@@ -63,6 +64,9 @@ void stencil_7_com(grid_param *p) {
     for (int t = 0; t < nt; t++) {
         while (*p->sync == 0);
         src = *p->src, dest = *p->dest;
+#ifdef PROFILING
+        lwpf_start(A);
+#endif
         for (int zz = z_begin; zz < z_end; zz += ans_size) {
             for (int yy = y_begin; yy < y_end; yy += ans_size) {
 
@@ -105,6 +109,9 @@ void stencil_7_com(grid_param *p) {
                 while (put_reply != 1);
             }
         }
+#ifdef PROFILING
+        lwpf_stop(A);
+#endif
         athread_syn(ARRAY_SCOPE, 0xffff);
         if (id == 0) {
             *p->sync = 0;
