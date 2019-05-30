@@ -23,12 +23,15 @@ extern SLAVE_FUN (stencil_7_com)(grid_param *);
 
 extern SLAVE_FUN (stencil_27_com)(grid_param *);
 
-volatile int sync = 0;
+extern volatile int __thread runnable;
+volatile int non_runnable = 0;
+unsigned long LDM_addr;
+
 #ifdef PROFILING
 perf_config_t conf; //以下是初始化采样选项的代码
 #endif
 
-inline double timer() {
+double timer() {
     double t;
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -102,12 +105,13 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
     MPI_Type_commit(&xyplane);
 
     int pid = grid_info->p_id;
+    non_runnable = 0;
     ptr_t a0, a1;
     grid_param p = {
             .src = &a0,
             .dest = &a1,
             .nt = nt,
-            .sync = &sync,
+            .non_runnable = &non_runnable,
             .grid_info = grid_info
     };
     athread_spawn(stencil_7_com, &p);
@@ -231,8 +235,10 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
             fprintf(stderr, "[%d]Iter %d mpi consume : %lf\n", pid, t, temp2 - temp);
         }
         time_consumed += temp2 - temp;
-        sync = 1;
-        while (sync == 1);
+        non_runnable = 1;
+//assume that pid % 4 == cgid
+        h2ldm(runnable, 0 , pid % 4) = 1;
+        while(non_runnable == 1);
 
     }
     athread_join();
@@ -271,12 +277,13 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
     MPI_Type_commit(&xyplane);
 
     int pid = grid_info->p_id;
+    non_runnable = 0;
     ptr_t a0, a1;
     grid_param p = {
             .src = &a0,
             .dest = &a1,
             .nt = nt,
-            .sync = &sync,
+            .non_runnable = &non_runnable,
             .grid_info = grid_info
     };
     athread_spawn(stencil_27_com, &p);
@@ -400,9 +407,10 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
             fprintf(stderr, "[%d]Iter %d mpi consume : %lf\n", pid, t, temp2 - temp);
         }
         time_consumed += temp2 - temp;
-        sync = 1;
-        while (sync == 1);
-
+        non_runnable = 1;
+//assume that pid % 4 == cgid
+        h2ldm(runnable, 0 , pid % 4) = 1;
+        while(non_runnable == 1);
     }
     athread_join();
     fprintf(stderr, "[%d]Iter mpi consume all : %lf\n", pid, time_consumed);

@@ -60,7 +60,7 @@ typedef struct {
 typedef struct {
     ptr_t *src, *dest;
     volatile int nt;
-    volatile int *sync;
+    volatile int *non_runnable;
     const dist_grid_info_t *grid_info;
 } grid_param;
 

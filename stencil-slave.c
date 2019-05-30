@@ -18,6 +18,10 @@
 
 #define THREAD_NUM 64
 
+extern volatile int non_runnable;
+
+__thread_local volatile int runnable = 0;
+
 void stencil_7_com(grid_param *p) {
 #ifdef PROFILING
     lwpf_enter(TEST);
@@ -27,6 +31,7 @@ void stencil_7_com(grid_param *p) {
     int id = athread_get_id(-1);
     int pid = p->grid_info->p_id;
     volatile int get_reply = 0, put_reply = 0;
+    runnable = 0;
 
     int x_size = p->grid_info->local_size_x;
     int y_size = p->grid_info->local_size_y / THREAD_NUM;
@@ -62,7 +67,9 @@ void stencil_7_com(grid_param *p) {
     data_t origin[ldx * ori_size * ori_size];
     data_t answer[ldx * ans_size * ans_size];
     for (int t = 0; t < nt; t++) {
-        while (*p->sync == 0);
+        if(id == 0)
+            while(runnable == 0);
+        athread_syn(ARRAY_SCOPE, 0xffff);
         src = *p->src, dest = *p->dest;
 #ifdef PROFILING
         lwpf_start(A);
@@ -114,7 +121,8 @@ void stencil_7_com(grid_param *p) {
 #endif
         athread_syn(ARRAY_SCOPE, 0xffff);
         if (id == 0) {
-            *p->sync = 0;
+            runnable = 0;
+            *p->non_runnable = 0;
         }
         athread_syn(ARRAY_SCOPE, 0xffff);
     }
@@ -134,6 +142,7 @@ void stencil_27_com(grid_param *p) {
     int id = athread_get_id(-1);
     int pid = p->grid_info->p_id;
     volatile int get_reply = 0, put_reply = 0;
+    runnable = 0;
 
     int x_size = p->grid_info->local_size_x;
     int y_size = p->grid_info->local_size_y / THREAD_NUM;
@@ -168,7 +177,9 @@ void stencil_27_com(grid_param *p) {
     data_t origin[ldx * ori_size * ori_size];
     data_t answer[ldx * ans_size * ans_size];
     for (int t = 0; t < nt; t++) {
-        while (*p->sync == 0);
+        if(id == 0)
+            while(runnable == 0);
+        athread_syn(ARRAY_SCOPE, 0xffff);
         src = *p->src, dest = *p->dest;
         for (int zz = z_begin; zz < z_end; zz += ans_size) {
             for (int yy = y_begin; yy < y_end; yy += ans_size) {
@@ -228,7 +239,8 @@ void stencil_27_com(grid_param *p) {
         }
         athread_syn(ARRAY_SCOPE, 0xffff);
         if (id == 0) {
-            *p->sync = 0;
+            runnable = 0;
+            *p->non_runnable = 0;
         }
         athread_syn(ARRAY_SCOPE, 0xffff);
     }
