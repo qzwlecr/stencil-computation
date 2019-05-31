@@ -6,6 +6,7 @@
 #include "common.h"
 
 //#define PROFILING
+//#define TIMING
 
 #ifdef PROFILING
 #define MPE
@@ -115,17 +116,21 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
             .grid_info = grid_info
     };
     athread_spawn(stencil_7_com, &p);
+#ifdef TIMING
     double time_consumed = 0;
+#endif
 
     for (int t = 0; t < nt; ++t) {
         a0 = buffer[t % 2];
         a1 = buffer[(t + 1) % 2];
         MPI_Status status[4];
         MPI_Request request[4];
+#ifdef TIMING
         double temp = timer(), temp2;
         if (pid == 1) {
             fprintf(stderr, "[%d]Iter %d mpi start : %lf\n", pid, t, temp);
         }
+#endif
         if (grid_info->num_x != 1) {
             if (pid % grid_info->num_x == 0) { // yz
                 MPI_Isend((void *) (a0 + x_end - 1), 1, yzplane, pid + 1, pid, MPI_COMM_WORLD, &request[0]);
@@ -229,12 +234,14 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
 
             }
         }
+#ifdef TIMING
         temp2 = timer();
         if (pid == 1) {
             fprintf(stderr, "[%d]Iter %d mpi end : %lf\n", pid, t, temp2);
             fprintf(stderr, "[%d]Iter %d mpi consume : %lf\n", pid, t, temp2 - temp);
         }
         time_consumed += temp2 - temp;
+#endif
         non_runnable = 1;
 //assume that pid % 4 == cgid
         h2ldm(runnable, 0 , pid % 4) = 1;
@@ -247,8 +254,10 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
         lwpf_report_detail(stdout, &conf); //输出最详细的数据
     }
 #endif
-    fprintf(stderr, "[%d]Stencil 7 computing done\n", grid_info->p_id);
+#ifdef TIMING
     fprintf(stderr, "[%d]Iter mpi consume all : %lf\n", pid, time_consumed);
+#endif
+    fprintf(stderr, "[%d]Stencil 7 computing done\n", grid_info->p_id);
     return buffer[nt % 2];
 }
 
@@ -287,17 +296,21 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
             .grid_info = grid_info
     };
     athread_spawn(stencil_27_com, &p);
+#ifdef TIMING
     double time_consumed = 0;
+#endif
 
     for (int t = 0; t < nt; ++t) {
         a0 = buffer[t % 2];
         a1 = buffer[(t + 1) % 2];
         MPI_Status status[4];
         MPI_Request request[4];
+#ifdef TIMING
         double temp = timer(), temp2;
         if (pid == 1) {
             fprintf(stderr, "[%d]Iter %d mpi start : %lf\n", pid, t, temp);
         }
+#endif
         if (grid_info->num_x != 1) {
             if (pid % grid_info->num_x == 0) { // yz
                 MPI_Isend((void *) (a0 + x_end - 1), 1, yzplane, pid + 1, pid, MPI_COMM_WORLD, &request[0]);
@@ -401,19 +414,23 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
 
             }
         }
+#ifdef TIMING
         temp2 = timer();
         if (pid == 1) {
             fprintf(stderr, "[%d]Iter %d mpi end : %lf\n", pid, t, temp2);
             fprintf(stderr, "[%d]Iter %d mpi consume : %lf\n", pid, t, temp2 - temp);
         }
         time_consumed += temp2 - temp;
+#endif
         non_runnable = 1;
 //assume that pid % 4 == cgid
         h2ldm(runnable, 0 , pid % 4) = 1;
         while(non_runnable == 1);
     }
     athread_join();
+#ifdef TIMING
     fprintf(stderr, "[%d]Iter mpi consume all : %lf\n", pid, time_consumed);
+#endif
     fprintf(stderr, "[%d]Stencil 27 computing done\n", grid_info->p_id);
     return buffer[nt % 2];
 }
