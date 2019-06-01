@@ -95,7 +95,7 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
     int ldz = grid_info->local_size_z + 2 * grid_info->halo_size_z;
 
 
-    fprintf(stderr, "[%d]Stencil 7 computing start\n", grid_info->p_id);
+//    fprintf(stderr, "[%d]Stencil 7 computing start\n", grid_info->p_id);
 
     MPI_Datatype yzplane, xzplane, xyplane;
     MPI_Type_vector(ldy * ldz, 1, ldx, MPI_DOUBLE, &yzplane);
@@ -257,7 +257,7 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
 #ifdef TIMING
     fprintf(stderr, "[%d]Iter mpi consume all : %lf\n", pid, time_consumed);
 #endif
-    fprintf(stderr, "[%d]Stencil 7 computing done\n", grid_info->p_id);
+//    fprintf(stderr, "[%d]Stencil 7 computing done\n", grid_info->p_id);
     return buffer[nt % 2];
 }
 
@@ -275,7 +275,7 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
     int ldz = grid_info->local_size_z + 2 * grid_info->halo_size_z;
 
 
-    fprintf(stderr, "[%d]Stencil 27 computing start\n", grid_info->p_id);
+//    fprintf(stderr, "[%d]Stencil 27 computing start\n", grid_info->p_id);
 
     MPI_Datatype yzplane, xzplane, xyplane;
     MPI_Type_vector(ldy * ldz, 1, ldx, MPI_DOUBLE, &yzplane);
@@ -431,6 +431,6 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
 #ifdef TIMING
     fprintf(stderr, "[%d]Iter mpi consume all : %lf\n", pid, time_consumed);
 #endif
-    fprintf(stderr, "[%d]Stencil 27 computing done\n", grid_info->p_id);
+//    fprintf(stderr, "[%d]Stencil 27 computing done\n", grid_info->p_id);
     return buffer[nt % 2];
 }
