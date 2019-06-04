@@ -3,6 +3,7 @@
 #include <assert.h>
 #include "cal.h"
 #include "time.h"
+#include "simd.h"
 #include "common.h"
 
 //#define PROFILING
