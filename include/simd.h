@@ -7,7 +7,7 @@
 /*	Declare the SIMD floating point operations			    	*/
 /*		by guoy 2003-4-29						*/
 /********************************************************************************/
-
+#define SW5
 #ifdef SW1
 typedef int __m128 __attribute__ ((__mode__(__V2DF__)));
 typedef int __v2df __attribute__ ((__mode__(__V2DF__)));

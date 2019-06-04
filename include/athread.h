@@ -63,13 +63,22 @@ extern int athread_expt_signal(int sig, void *fpc);
 #ifndef XIAOQ20120112
 extern void *malloc_cross (size_t __size) __attribute__ ((__malloc__));
 #endif
-#ifndef WANGF20110618
 
+#ifdef XIAOQ20170517
+#ifndef WANGF20110618 
 #define h2ldm(element, penum, cgn) *(typeof(element) *)(((unsigned long )0x8002000000 | ((unsigned long)cgn << 36) | (penum<<16) )+(long)(&element)-(long)(&_tdata_local_start) + *((long *)((long)&_tdata_local_start-8)))
 
 #define IO_addr(element, penum, cgn) (unsigned long )(typeof(element) *)(((unsigned long )0x8002000000 | ((unsigned long)cgn << 36) | (penum<<16) )+(long)(&element)-(long)(&_tdata_local_start) + *((long *)((long)&_tdata_local_start-8)))
-
 #endif
+
+#else
+
+extern __thread unsigned long _PC;
+#define h2ldm(element, penum, cgn) *(typeof(element) *)(((unsigned long )0x8002000000 | ((unsigned long)cgn << 36) | (penum<<16) )+(long)(&element)-(long)&_PC + 0x20)
+
+#define IO_addr(element, penum, cgn) (unsigned long )(typeof(element) *)(((unsigned long )0x8002000000 | ((unsigned long)cgn << 36) | (penum<<16) )+(long)(&element)-(long)&_PC + 0x20)
+#endif
+
 
 #ifndef XIAOQ20141229
 #define __thread_mix __thread
