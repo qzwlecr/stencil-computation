@@ -48,8 +48,8 @@ void create_dist_grid(dist_grid_info_t *grid_info, int stencil_type) {
         grid_info->num_z = 16;
     } else {
         grid_info->num_x = 1;
-        grid_info->num_y = 2;
-        grid_info->num_z = 32;
+        grid_info->num_y = 1;
+        grid_info->num_z = 64;
     }
     grid_info->local_size_x = grid_info->global_size_x / grid_info->num_x;
     grid_info->local_size_y = grid_info->global_size_y / grid_info->num_y;
@@ -109,8 +109,8 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
     non_runnable = 0;
     ptr_t a0, a1;
     grid_param p = {
-            .src = &a0,
-            .dest = &a1,
+            .grid = grid,
+            .aux = aux,
             .nt = nt,
             .non_runnable = &non_runnable,
             .grid_info = grid_info
@@ -289,8 +289,8 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
     non_runnable = 0;
     ptr_t a0, a1;
     grid_param p = {
-            .src = &a0,
-            .dest = &a1,
+            .grid = grid,
+            .aux = aux,
             .nt = nt,
             .non_runnable = &non_runnable,
             .grid_info = grid_info
