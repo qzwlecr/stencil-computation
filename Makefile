@@ -3,7 +3,7 @@ SWCC = sw5cc
 OPT =
 CFLAGS = -O3 -I./include -Wall -std=gnu99 $(OPT) -OPT:IEEE_arith=1 -LNO:simd=1
 LDFLAGS = -Wall #-Wl,--whole-archive,-wrap,athread_init,-wrap,__expt_handler,-wrap,__real_athread_spawn /home/export/online1/swmore/release/lib/libspc.a -Wl,--no-whole-archive
-LDLIBS = $(LDFLAGS)
+LDLIBS = $(LDFLAGS) #-L/home/export/base/CPC/cpc035/prefix/lib --whole-archive -llmpe --no-whole-archive -lmpe
 
 targets = benchmark-naive benchmark-optimized
 objects = check.o benchmark.o stencil-naive.o stencil-optimized.o stencil-slave.o
