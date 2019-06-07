@@ -26,7 +26,8 @@ extern SLAVE_FUN(stencil_7_com)(grid_param
 extern SLAVE_FUN(stencil_27_com)(grid_param
 *);
 
-extern volatile int __thread runnable;
+extern volatile int __thread runnable0;
+extern volatile int __thread runnable1;
 volatile int non_runnable = 0;
 unsigned long LDM_addr;
 
@@ -121,9 +122,10 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
     for (int t = 0; t < nt; ++t) {
         a0 = buffer[t % 2];
         a1 = buffer[(t + 1) % 2];
-        MPI_Status status[12];
-        MPI_Request request[12];
-        int count = 0;
+        MPI_Status status[2][6];
+        MPI_Request request[2][6];
+        int count0 = 0;
+        int count1 = 0;
 #ifdef TIMING
         double temp = timer(), temp2;
         if (pid == 1) {
@@ -132,16 +134,16 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
 #endif
         if (grid_info->num_x != 1) {
             if (pid % grid_info->num_x == 0) { // yz
-                MPI_Isend((void *) (a0 + x_end - 1), 1, yzplane, pid + 1, pid, MPI_COMM_WORLD, &request[count++]);
-                MPI_Irecv((void *) (a0 + x_end), 1, yzplane, pid + 1, pid + 1, MPI_COMM_WORLD, &request[count++]);
+                MPI_Isend((void *) (a0 + x_end - 1), 1, yzplane, pid + 1, pid, MPI_COMM_WORLD, &request[0][count0++]);
+                MPI_Irecv((void *) (a0 + x_end), 1, yzplane, pid + 1, pid + 1, MPI_COMM_WORLD, &request[0][count0++]);
             } else if (pid % grid_info->num_x == grid_info->num_x - 1) {
-                MPI_Isend((void *) (a0 + x_start), 1, yzplane, pid - 1, pid, MPI_COMM_WORLD, &request[count++]);
-                MPI_Irecv((void *) (a0 + x_start - 1), 1, yzplane, pid - 1, pid - 1, MPI_COMM_WORLD, &request[count++]);
+                MPI_Isend((void *) (a0 + x_start), 1, yzplane, pid - 1, pid, MPI_COMM_WORLD, &request[1][count1++]);
+                MPI_Irecv((void *) (a0 + x_start - 1), 1, yzplane, pid - 1, pid - 1, MPI_COMM_WORLD, &request[1][count1++]);
             } else {
-                MPI_Isend((void *) (a0 + x_start), 1, yzplane, pid - 1, pid, MPI_COMM_WORLD, &request[count++]);
-                MPI_Irecv((void *) (a0 + x_start - 1), 1, yzplane, pid - 1, pid - 1, MPI_COMM_WORLD, &request[count++]);
-                MPI_Isend((void *) (a0 + x_end - 1), 1, yzplane, pid + 1, pid, MPI_COMM_WORLD, &request[count++]);
-                MPI_Irecv((void *) (a0 + x_end), 1, yzplane, pid + 1, pid + 1, MPI_COMM_WORLD, &request[count++]);
+                MPI_Isend((void *) (a0 + x_start), 1, yzplane, pid - 1, pid, MPI_COMM_WORLD, &request[1][count1++]);
+                MPI_Irecv((void *) (a0 + x_start - 1), 1, yzplane, pid - 1, pid - 1, MPI_COMM_WORLD, &request[1][count1++]);
+                MPI_Isend((void *) (a0 + x_end - 1), 1, yzplane, pid + 1, pid, MPI_COMM_WORLD, &request[0][count0++]);
+                MPI_Irecv((void *) (a0 + x_end), 1, yzplane, pid + 1, pid + 1, MPI_COMM_WORLD, &request[0][count0++]);
             }
         }
 
@@ -150,37 +152,37 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
                 MPI_Isend((void *) (a0 + (y_end - 1) * ldx), 1, xzplane,
                           pid + grid_info->num_x,
                           pid,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[0][count0++]);
                 MPI_Irecv((void *) (a0 + y_end * ldx), 1, xzplane,
                           pid + grid_info->num_x,
                           pid + grid_info->num_x,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[0][count0++]);
             } else if ((pid / grid_info->num_x) % grid_info->num_y == grid_info->num_y - 1) {
                 MPI_Isend((void *) (a0 + y_start * ldx), 1, xzplane,
                           pid - grid_info->num_x,
                           pid,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[1][count1++]);
                 MPI_Irecv((void *) (a0 + (y_start - 1) * ldx), 1, xzplane,
                           pid - grid_info->num_x,
                           pid - grid_info->num_x,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[1][count1++]);
             } else {
                 MPI_Isend((void *) (a0 + (y_end - 1) * ldx), 1, xzplane,
                           pid + grid_info->num_x,
                           pid,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[0][count0++]);
                 MPI_Irecv((void *) (a0 + y_end * ldx), 1, xzplane,
                           pid + grid_info->num_x,
                           pid + grid_info->num_x,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[0][count0++]);
                 MPI_Isend((void *) (a0 + y_start * ldx), 1, xzplane,
                           pid - grid_info->num_x,
                           pid,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[1][count1++]);
                 MPI_Irecv((void *) (a0 + (y_start - 1) * ldx), 1, xzplane,
                           pid - grid_info->num_x,
                           pid - grid_info->num_x,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[1][count1++]);
             }
 
         }
@@ -190,39 +192,38 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
                 MPI_Isend((void *) (a0 + (z_end - 1) * ldx * ldy), 1, xyplane,
                           pid + grid_info->num_x * grid_info->num_y,
                           pid,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[0][count0++]);
                 MPI_Irecv((void *) (a0 + z_end * ldx * ldy), 1, xyplane,
                           pid + grid_info->num_x * grid_info->num_y,
                           pid + grid_info->num_x * grid_info->num_y,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &reques[0]t[count0++]);
             } else if (pid / grid_info->num_x / grid_info->num_y == grid_info->num_z - 1) {
                 MPI_Isend((void *) (a0 + z_start * ldx * ldy), 1, xyplane,
                           pid - grid_info->num_x * grid_info->num_y,
                           pid,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[1][count1++]);
                 MPI_Irecv((void *) (a0 + (z_start - 1) * ldx * ldy), 1, xyplane,
                           pid - grid_info->num_x * grid_info->num_y,
                           pid - grid_info->num_x * grid_info->num_y,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[1][count1++]);
             } else {
                 MPI_Isend((void *) (a0 + (z_end - 1) * ldx * ldy), 1, xyplane,
                           pid + grid_info->num_x * grid_info->num_y,
                           pid,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[0][count0++]);
                 MPI_Irecv((void *) (a0 + z_end * ldx * ldy), 1, xyplane,
                           pid + grid_info->num_x * grid_info->num_y,
                           pid + grid_info->num_x * grid_info->num_y,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[0][count0++]);
                 MPI_Isend((void *) (a0 + z_start * ldx * ldy), 1, xyplane,
                           pid - grid_info->num_x * grid_info->num_y,
                           pid,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[1][count1++]);
                 MPI_Irecv((void *) (a0 + (z_start - 1) * ldx * ldy), 1, xyplane,
                           pid - grid_info->num_x * grid_info->num_y,
                           pid - grid_info->num_x * grid_info->num_y,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[1][count1++]);
             }
-            MPI_Waitall(count, request, status);
         }
 #ifdef TIMING
         temp2 = timer();
@@ -233,8 +234,22 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
         time_consumed += temp2 - temp;
 #endif
         non_runnable = 1;
-//assume that pid % 4 == cgid
-        h2ldm(runnable, 0, pid % 4) = 1;
+        //assume that pid % 4 == cgid
+        bool flag0 = FALSE;
+        bool flag1 = FALSE;
+        while(1){
+            if(!flag0) MPI_Test(request[0],&flag0,status[0]);
+            if(!flag1) MPI_Test(request[1],&flag1,status[1]);
+            if(flag0&&flag1) break;
+            if(flag0&&runnable0==0){
+                h2ldm(runnable0, 0, pid % 4) = 1;
+            }
+            if(flag1&&runnable1==0){
+                h2ldm(runnable1, 0, pid % 4) = 1;
+            }
+            //MPI_Waitall(count, request, status);
+            //h2ldm(runnable, 0, pid % 4) = 1;
+        }
         while (non_runnable == 1);
 
     }
@@ -293,9 +308,10 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
     for (int t = 0; t < nt; ++t) {
         a0 = buffer[t % 2];
         a1 = buffer[(t + 1) % 2];
-        MPI_Status status[12];
-        MPI_Request request[12];
-        int count = 0;
+        MPI_Status status[2][6];
+        MPI_Request request[2][6];
+        int count1 = 0;
+        int count2 = 0;
 #ifdef TIMING
         double temp = timer(), temp2;
         if (pid == 1) {
@@ -304,16 +320,16 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
 #endif
         if (grid_info->num_x != 1) {
             if (pid % grid_info->num_x == 0) { // yz
-                MPI_Isend((void *) (a0 + x_end - 1), 1, yzplane, pid + 1, pid, MPI_COMM_WORLD, &request[count++]);
-                MPI_Irecv((void *) (a0 + x_end), 1, yzplane, pid + 1, pid + 1, MPI_COMM_WORLD, &request[count++]);
+                MPI_Isend((void *) (a0 + x_end - 1), 1, yzplane, pid + 1, pid, MPI_COMM_WORLD, &request[0][count0++]);
+                MPI_Irecv((void *) (a0 + x_end), 1, yzplane, pid + 1, pid + 1, MPI_COMM_WORLD, &request[0][count0++]);
             } else if (pid % grid_info->num_x == grid_info->num_x - 1) {
-                MPI_Isend((void *) (a0 + x_start), 1, yzplane, pid - 1, pid, MPI_COMM_WORLD, &request[count++]);
-                MPI_Irecv((void *) (a0 + x_start - 1), 1, yzplane, pid - 1, pid - 1, MPI_COMM_WORLD, &request[count++]);
+                MPI_Isend((void *) (a0 + x_start), 1, yzplane, pid - 1, pid, MPI_COMM_WORLD, &request[1][count1++]);
+                MPI_Irecv((void *) (a0 + x_start - 1), 1, yzplane, pid - 1, pid - 1, MPI_COMM_WORLD, &request[1][count1++]);
             } else {
-                MPI_Isend((void *) (a0 + x_start), 1, yzplane, pid - 1, pid, MPI_COMM_WORLD, &request[count++]);
-                MPI_Irecv((void *) (a0 + x_start - 1), 1, yzplane, pid - 1, pid - 1, MPI_COMM_WORLD, &request[count++]);
-                MPI_Isend((void *) (a0 + x_end - 1), 1, yzplane, pid + 1, pid, MPI_COMM_WORLD, &request[count++]);
-                MPI_Irecv((void *) (a0 + x_end), 1, yzplane, pid + 1, pid + 1, MPI_COMM_WORLD, &request[count++]);
+                MPI_Isend((void *) (a0 + x_start), 1, yzplane, pid - 1, pid, MPI_COMM_WORLD, &request[1][count1++]);
+                MPI_Irecv((void *) (a0 + x_start - 1), 1, yzplane, pid - 1, pid - 1, MPI_COMM_WORLD, &request[1][count1++]);
+                MPI_Isend((void *) (a0 + x_end - 1), 1, yzplane, pid + 1, pid, MPI_COMM_WORLD, &request[0][count0++]);
+                MPI_Irecv((void *) (a0 + x_end), 1, yzplane, pid + 1, pid + 1, MPI_COMM_WORLD, &request[0][count0++]);
             }
         }
 
@@ -322,37 +338,37 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
                 MPI_Isend((void *) (a0 + (y_end - 1) * ldx), 1, xzplane,
                           pid + grid_info->num_x,
                           pid,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[0][count0++]);
                 MPI_Irecv((void *) (a0 + y_end * ldx), 1, xzplane,
                           pid + grid_info->num_x,
                           pid + grid_info->num_x,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[0][count0++]);
             } else if ((pid / grid_info->num_x) % grid_info->num_y == grid_info->num_y - 1) {
                 MPI_Isend((void *) (a0 + y_start * ldx), 1, xzplane,
                           pid - grid_info->num_x,
                           pid,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[1][count1++]);
                 MPI_Irecv((void *) (a0 + (y_start - 1) * ldx), 1, xzplane,
                           pid - grid_info->num_x,
                           pid - grid_info->num_x,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[1][count1++]);
             } else {
                 MPI_Isend((void *) (a0 + (y_end - 1) * ldx), 1, xzplane,
                           pid + grid_info->num_x,
                           pid,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[0][count0++]);
                 MPI_Irecv((void *) (a0 + y_end * ldx), 1, xzplane,
                           pid + grid_info->num_x,
                           pid + grid_info->num_x,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[0][count0++]);
                 MPI_Isend((void *) (a0 + y_start * ldx), 1, xzplane,
                           pid - grid_info->num_x,
                           pid,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[1][count1++]);
                 MPI_Irecv((void *) (a0 + (y_start - 1) * ldx), 1, xzplane,
                           pid - grid_info->num_x,
                           pid - grid_info->num_x,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[1][count1++]);
             }
 
         }
@@ -362,39 +378,39 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
                 MPI_Isend((void *) (a0 + (z_end - 1) * ldx * ldy), 1, xyplane,
                           pid + grid_info->num_x * grid_info->num_y,
                           pid,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[0][count0++]);
                 MPI_Irecv((void *) (a0 + z_end * ldx * ldy), 1, xyplane,
                           pid + grid_info->num_x * grid_info->num_y,
                           pid + grid_info->num_x * grid_info->num_y,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &reques[0]t[count0++]);
             } else if (pid / grid_info->num_x / grid_info->num_y == grid_info->num_z - 1) {
                 MPI_Isend((void *) (a0 + z_start * ldx * ldy), 1, xyplane,
                           pid - grid_info->num_x * grid_info->num_y,
                           pid,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[1][count1++]);
                 MPI_Irecv((void *) (a0 + (z_start - 1) * ldx * ldy), 1, xyplane,
                           pid - grid_info->num_x * grid_info->num_y,
                           pid - grid_info->num_x * grid_info->num_y,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[1][count1++]);
             } else {
                 MPI_Isend((void *) (a0 + (z_end - 1) * ldx * ldy), 1, xyplane,
                           pid + grid_info->num_x * grid_info->num_y,
                           pid,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[0][count0++]);
                 MPI_Irecv((void *) (a0 + z_end * ldx * ldy), 1, xyplane,
                           pid + grid_info->num_x * grid_info->num_y,
                           pid + grid_info->num_x * grid_info->num_y,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[0][count0++]);
                 MPI_Isend((void *) (a0 + z_start * ldx * ldy), 1, xyplane,
                           pid - grid_info->num_x * grid_info->num_y,
                           pid,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[1][count1++]);
                 MPI_Irecv((void *) (a0 + (z_start - 1) * ldx * ldy), 1, xyplane,
                           pid - grid_info->num_x * grid_info->num_y,
                           pid - grid_info->num_x * grid_info->num_y,
-                          MPI_COMM_WORLD, &request[count++]);
+                          MPI_COMM_WORLD, &request[1][count1++]);
             }
-            MPI_Waitall(count, request, status);
+            //MPI_Waitall(count, request, status);
         }
 #ifdef TIMING
         temp2 = timer();
