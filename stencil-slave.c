@@ -43,8 +43,8 @@ void stencil_7_com(grid_param *p) {
     //the highest and lowest layer wouldn't be computed first.
     int per_size = tot_size / THREAD_NUM;
 
-    int x_begin = halo_size_x;
-    int x_end = local_size_x + halo_size_x;
+    int x_begin = halo_size_x + 3;
+    int x_end = local_size_x + halo_size_x + 3;
 
     int z_loc[4];
     int y_begin[4];
@@ -75,15 +75,28 @@ void stencil_7_com(grid_param *p) {
 
     int ldx = local_size_x + 2 * halo_size_x;
     int ldy = local_size_y + 2 * halo_size_y;
+    int local_ldx = ldx + 6;
 
     int nt = p->nt;
 
     ptr_t src, dest;
     ptr_t buffer[2] = {p->grid, p->aux};
 
-    data_t origin[ldx * 3 * 3];
-    data_t answer[ldx * 1 * 1];
+    ptr_t origin = (data_t *) ldm_malloc((ldx + 6) * 3 * 3 + 4);
+    while ((int) origin % 32 != 0)
+        origin++;
+    ptr_t answer = (data_t *) ldm_malloc((ldx + 6) * 1 * 1 + 4);
+    while ((int) answer % 32 != 0)
+        answer++;
     runnable = 0;
+
+    doublev4 m_zzz = simd_set_doublev4(ALPHA_ZZZ, ALPHA_ZZZ, ALPHA_ZZZ, ALPHA_ZZZ);
+    doublev4 m_pzz = simd_set_doublev4(ALPHA_PZZ, ALPHA_PZZ, ALPHA_PZZ, ALPHA_PZZ);
+    doublev4 m_nzz = simd_set_doublev4(ALPHA_NZZ, ALPHA_NZZ, ALPHA_NZZ, ALPHA_NZZ);
+    doublev4 m_zpz = simd_set_doublev4(ALPHA_ZPZ, ALPHA_ZPZ, ALPHA_ZPZ, ALPHA_ZPZ);
+    doublev4 m_znz = simd_set_doublev4(ALPHA_ZNZ, ALPHA_ZNZ, ALPHA_ZNZ, ALPHA_ZNZ);
+    doublev4 m_zzp = simd_set_doublev4(ALPHA_ZZP, ALPHA_ZZP, ALPHA_ZZP, ALPHA_ZZP);
+    doublev4 m_zzn = simd_set_doublev4(ALPHA_ZZN, ALPHA_ZZN, ALPHA_ZZN, ALPHA_ZZN);
 
     for (int t = 0; t < nt; t++) {
         src = buffer[t % 2];
@@ -98,37 +111,55 @@ void stencil_7_com(grid_param *p) {
             for (int yy = y_begin[z]; yy < y_end[z]; yy++) {
                 if (yy == y_begin[z]) {
                     get_reply = 0;
-                    athread_get(PE_MODE, &src[INDEX(0, yy - 1, zz, ldx, ldy)], &origin[INDEX(0, 0, 1, ldx, 3)],
-                                ldx * 2 * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
-                    while (get_reply != 1);
+                    athread_get(PE_MODE, &src[INDEX(0, yy - 1, zz, ldx, ldy)], &origin[INDEX(3, 0, 1, local_ldx, 3)],
+                                ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
+                    athread_get(PE_MODE, &src[INDEX(0, yy, zz, ldx, ldy)], &origin[INDEX(3, 1, 1, local_ldx, 3)],
+                                ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
+                    while (get_reply != 2);
                 }
 
                 //use rotated array to avoid sloooooooow memcpy
 
                 get_reply = 0;
-                athread_get(PE_MODE, &src[INDEX(0, yy + 1, zz, ldx, ldy)], &origin[INDEX(0, y2, 1, ldx, 3)],
+                athread_get(PE_MODE, &src[INDEX(0, yy + 1, zz, ldx, ldy)], &origin[INDEX(3, y2, 1, local_ldx, 3)],
                             ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
-                athread_get(PE_MODE, &src[INDEX(0, yy, zz - 1, ldx, ldy)], &origin[INDEX(0, y1, 0, ldx, 3)],
+                athread_get(PE_MODE, &src[INDEX(0, yy, zz - 1, ldx, ldy)], &origin[INDEX(3, y1, 0, local_ldx, 3)],
                             ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
-                athread_get(PE_MODE, &src[INDEX(0, yy, zz + 1, ldx, ldy)], &origin[INDEX(0, y1, 2, ldx, 3)],
+                athread_get(PE_MODE, &src[INDEX(0, yy, zz + 1, ldx, ldy)], &origin[INDEX(3, y1, 2, local_ldx, 3)],
                             ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
                 while (get_reply != 3);
 
-                for (int x = x_begin; x < x_end; ++x) {
-                    answer[INDEX(x, 0, 0, ldx, 1)] =
-                            ALPHA_ZZZ * origin[INDEX(x, y1, 1, ldx, 3)]
-                            + ALPHA_NZZ * origin[INDEX(x - 1, y1, 1, ldx, 3)]
-                            + ALPHA_PZZ * origin[INDEX(x + 1, y1, 1, ldx, 3)]
-                            + ALPHA_ZNZ * origin[INDEX(x, y0, 1, ldx, 3)]
-                            + ALPHA_ZPZ * origin[INDEX(x, y2, 1, ldx, 3)]
-                            + ALPHA_ZZN * origin[INDEX(x, y1, 0, ldx, 3)]
-                            + ALPHA_ZZP * origin[INDEX(x, y1, 2, ldx, 3)];
+                doublev4 zzz, nzz, pzz, znz, zpz, zzn, zzp;
+                for (int x = x_begin; x < x_end; x += 4) {
+                    simd_load(zzz, &origin[INDEX(x, y1, 1, local_ldx, 3)]);
+                    zzz = zzz * m_zzz;
+                    simd_loadu(nzz, &origin[INDEX(x - 1, y1, 1, local_ldx, 3)]);
+                    zzz += nzz * m_nzz;
+                    simd_loadu(pzz, &origin[INDEX(x + 1, y1, 1, local_ldx, 3)]);
+                    zzz += pzz * m_pzz;
+                    simd_load(znz, &origin[INDEX(x, y0, 1, local_ldx, 3)]);
+                    zzz += znz * m_znz;
+                    simd_load(zpz, &origin[INDEX(x, y2, 1, local_ldx, 3)]);
+                    zzz += zpz * m_zpz;
+                    simd_load(zzn, &origin[INDEX(x, y1, 0, local_ldx, 3)]);
+                    zzz += zzn * m_zzn;
+                    simd_load(zzp, &origin[INDEX(x, y1, 2, local_ldx, 3)]);
+                    zzz += zzp * m_zzp;
+                    simd_store(zzz, &answer[INDEX(x, 0, 0, local_ldx, 1)]);
+//                    answer[INDEX(x, 0, 0, local_ldx, 1)] =
+//                            ALPHA_ZZZ * origin[INDEX(x, y1, 1, local_ldx, 3)]
+//                            + ALPHA_NZZ * origin[INDEX(x - 1, y1, 1, local_ldx, 3)]
+//                            + ALPHA_PZZ * origin[INDEX(x + 1, y1, 1, local_ldx, 3)]
+//                            + ALPHA_ZNZ * origin[INDEX(x, y0, 1, local_ldx, 3)]
+//                            + ALPHA_ZPZ * origin[INDEX(x, y2, 1, local_ldx, 3)]
+//                            + ALPHA_ZZN * origin[INDEX(x, y1, 0, local_ldx, 3)]
+//                            + ALPHA_ZZP * origin[INDEX(x, y1, 2, local_ldx, 3)];
 
                 }
 
                 put_reply = 0;
-                athread_put(PE_MODE, answer, &dest[INDEX(0, yy, zz, ldx, ldy)],
-                            ldx * 1 * 1 * sizeof(data_t),
+                athread_put(PE_MODE, &answer[3], &dest[INDEX(0, yy, zz, ldx, ldy)],
+                            ldx * 1 * sizeof(data_t),
                             (void *) &put_reply, ldx * (ldy - 1) * sizeof(data_t),
                             ldx * 1 * sizeof(data_t));
                 y0 = (y0 + 1) % 3;
@@ -149,37 +180,55 @@ void stencil_7_com(grid_param *p) {
             for (int yy = y_begin[z]; yy < y_end[z]; yy++) {
                 if (yy == y_begin[z]) {
                     get_reply = 0;
-                    athread_get(PE_MODE, &src[INDEX(0, yy - 1, zz, ldx, ldy)], &origin[INDEX(0, 0, 1, ldx, 3)],
-                                ldx * 2 * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
-                    while (get_reply != 1);
+                    athread_get(PE_MODE, &src[INDEX(0, yy - 1, zz, ldx, ldy)], &origin[INDEX(3, 0, 1, local_ldx, 3)],
+                                ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
+                    athread_get(PE_MODE, &src[INDEX(0, yy, zz, ldx, ldy)], &origin[INDEX(3, 1, 1, local_ldx, 3)],
+                                ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
+                    while (get_reply != 2);
                 }
 
                 //use rotated array to avoid sloooooooow memcpy
 
                 get_reply = 0;
-                athread_get(PE_MODE, &src[INDEX(0, yy + 1, zz, ldx, ldy)], &origin[INDEX(0, y2, 1, ldx, 3)],
+                athread_get(PE_MODE, &src[INDEX(0, yy + 1, zz, ldx, ldy)], &origin[INDEX(3, y2, 1, local_ldx, 3)],
                             ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
-                athread_get(PE_MODE, &src[INDEX(0, yy, zz - 1, ldx, ldy)], &origin[INDEX(0, y1, 0, ldx, 3)],
+                athread_get(PE_MODE, &src[INDEX(0, yy, zz - 1, ldx, ldy)], &origin[INDEX(3, y1, 0, local_ldx, 3)],
                             ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
-                athread_get(PE_MODE, &src[INDEX(0, yy, zz + 1, ldx, ldy)], &origin[INDEX(0, y1, 2, ldx, 3)],
+                athread_get(PE_MODE, &src[INDEX(0, yy, zz + 1, ldx, ldy)], &origin[INDEX(3, y1, 2, local_ldx, 3)],
                             ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
                 while (get_reply != 3);
 
-                for (int x = x_begin; x < x_end; ++x) {
-                    answer[INDEX(x, 0, 0, ldx, 1)] =
-                            ALPHA_ZZZ * origin[INDEX(x, y1, 1, ldx, 3)]
-                            + ALPHA_NZZ * origin[INDEX(x - 1, y1, 1, ldx, 3)]
-                            + ALPHA_PZZ * origin[INDEX(x + 1, y1, 1, ldx, 3)]
-                            + ALPHA_ZNZ * origin[INDEX(x, y0, 1, ldx, 3)]
-                            + ALPHA_ZPZ * origin[INDEX(x, y2, 1, ldx, 3)]
-                            + ALPHA_ZZN * origin[INDEX(x, y1, 0, ldx, 3)]
-                            + ALPHA_ZZP * origin[INDEX(x, y1, 2, ldx, 3)];
+                doublev4 zzz, nzz, pzz, znz, zpz, zzn, zzp;
+                for (int x = x_begin; x < x_end; x += 4) {
+                    simd_load(zzz, &origin[INDEX(x, y1, 1, local_ldx, 3)]);
+                    zzz = zzz * m_zzz;
+                    simd_loadu(nzz, &origin[INDEX(x - 1, y1, 1, local_ldx, 3)]);
+                    zzz += nzz * m_nzz;
+                    simd_loadu(pzz, &origin[INDEX(x + 1, y1, 1, local_ldx, 3)]);
+                    zzz += pzz * m_pzz;
+                    simd_load(znz, &origin[INDEX(x, y0, 1, local_ldx, 3)]);
+                    zzz += znz * m_znz;
+                    simd_load(zpz, &origin[INDEX(x, y2, 1, local_ldx, 3)]);
+                    zzz += zpz * m_zpz;
+                    simd_load(zzn, &origin[INDEX(x, y1, 0, local_ldx, 3)]);
+                    zzz += zzn * m_zzn;
+                    simd_load(zzp, &origin[INDEX(x, y1, 2, local_ldx, 3)]);
+                    zzz += zzp * m_zzp;
+                    simd_store(zzz, &answer[INDEX(x, 0, 0, local_ldx, 1)]);
+//                    answer[INDEX(x, 0, 0, local_ldx, 1)] =
+//                            ALPHA_ZZZ * origin[INDEX(x, y1, 1, local_ldx, 3)]
+//                            + ALPHA_NZZ * origin[INDEX(x - 1, y1, 1, local_ldx, 3)]
+//                            + ALPHA_PZZ * origin[INDEX(x + 1, y1, 1, local_ldx, 3)]
+//                            + ALPHA_ZNZ * origin[INDEX(x, y0, 1, local_ldx, 3)]
+//                            + ALPHA_ZPZ * origin[INDEX(x, y2, 1, local_ldx, 3)]
+//                            + ALPHA_ZZN * origin[INDEX(x, y1, 0, local_ldx, 3)]
+//                            + ALPHA_ZZP * origin[INDEX(x, y1, 2, local_ldx, 3)];
 
                 }
 
                 put_reply = 0;
-                athread_put(PE_MODE, answer, &dest[INDEX(0, yy, zz, ldx, ldy)],
-                            ldx * 1 * 1 * sizeof(data_t),
+                athread_put(PE_MODE, &answer[3], &dest[INDEX(0, yy, zz, ldx, ldy)],
+                            ldx * 1 * sizeof(data_t),
                             (void *) &put_reply, ldx * (ldy - 1) * sizeof(data_t),
                             ldx * 1 * sizeof(data_t));
                 y0 = (y0 + 1) % 3;
