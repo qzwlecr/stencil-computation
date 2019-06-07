@@ -15,6 +15,28 @@
 #include "lwpf2.h"
 #endif
 
+#define TIMING
+#ifdef TIMING
+#define TIMING_COMPUTE_BEGIN rtc_(&rpcc_begin);
+#else
+#define TIMING_COMPUTE_BEGIN ;
+#endif
+#ifdef TIMING
+#define TIMING_COMPUTE_END rtc_(&rpcc_end); compute += rpcc_end - rpcc_begin;
+#else
+#define TIMING_COMPUTE_END ;
+#endif
+#ifdef TIMING
+#define TIMING_COMMUNI_BEGIN rtc_(&rpcc_begin);
+#else
+#define TIMING_COMMUNI_BEGIN ;
+#endif
+#ifdef TIMING
+#define TIMING_COMMUNI_END rtc_(&rpcc_end); communicate += rpcc_end - rpcc_begin;
+#else
+#define TIMING_COMMUNI_END ;
+#endif
+
 #define DUMP(varname) cal_locked_printf("[%d][%d]%s = %d\n", pid, id, #varname, varname);
 #define DUMPF(varname) cal_locked_printf("[%d][%d]%s = %lf\n", pid, id, #varname, varname);
 
@@ -27,6 +49,12 @@ __thread_local volatile int runnable1 = 0;
 
 
 #define _memcpy(dst, src, len) { for (int i = 0; i < len; i++) *(dst + i) = *(src + i);}
+
+static inline void rtc_(unsigned long *counter) {
+    unsigned long rpcc;
+    asm volatile("rcsr %0, 4":"=r"(rpcc));
+    *counter = rpcc;
+}
 
 void stencil_7_com(grid_param *p) {
 #ifdef PROFILING
@@ -90,6 +118,11 @@ void stencil_7_com(grid_param *p) {
     runnable0 = 0;
     runnable1 = 0;
 
+#ifdef TIMING
+    unsigned long rpcc_begin, rpcc_end;
+    unsigned long compute = 0, communicate = 0;
+#endif
+
     for (int t = 0; t < nt; t++) {
         src = buffer[t % 2];
         dest = buffer[(t + 1) % 2];
@@ -102,14 +135,18 @@ void stencil_7_com(grid_param *p) {
             int zz = z_loc[z];
             for (int yy = y_begin[z]; yy < y_end[z]; yy++) {
                 if (yy == y_begin[z]) {
+                    TIMING_COMMUNI_BEGIN;
                     get_reply = 0;
                     athread_get(PE_MODE, &src[INDEX(0, yy - 1, zz, ldx, ldy)], &origin[INDEX(0, 0, 1, ldx, 3)],
                                 ldx * 2 * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
                     while (get_reply != 1);
+                    TIMING_COMMUNI_END;
                 }
 
                 //use rotated array to avoid sloooooooow memcpy
 
+
+                TIMING_COMMUNI_BEGIN;
                 get_reply = 0;
                 athread_get(PE_MODE, &src[INDEX(0, yy + 1, zz, ldx, ldy)], &origin[INDEX(0, y2, 1, ldx, 3)],
                             ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
@@ -118,7 +155,9 @@ void stencil_7_com(grid_param *p) {
                 athread_get(PE_MODE, &src[INDEX(0, yy, zz + 1, ldx, ldy)], &origin[INDEX(0, y1, 2, ldx, 3)],
                             ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
                 while (get_reply != 3);
+                TIMING_COMMUNI_END;
 
+                TIMING_COMPUTE_BEGIN;
                 for (int x = x_begin; x < x_end; ++x) {
                     answer[INDEX(x, 0, 0, ldx, 1)] =
                             ALPHA_ZZZ * origin[INDEX(x, y1, 1, ldx, 3)]
@@ -130,7 +169,9 @@ void stencil_7_com(grid_param *p) {
                             + ALPHA_ZZP * origin[INDEX(x, y1, 2, ldx, 3)];
 
                 }
+                TIMING_COMPUTE_END;
 
+                TIMING_COMMUNI_BEGIN;
                 put_reply = 0;
                 athread_put(PE_MODE, answer, &dest[INDEX(0, yy, zz, ldx, ldy)],
                             ldx * 1 * 1 * sizeof(data_t),
@@ -140,6 +181,7 @@ void stencil_7_com(grid_param *p) {
                 y1 = (y1 + 1) % 3;
                 y2 = (y2 + 1) % 3;
                 while (put_reply != 1);
+                TIMING_COMMUNI_END;
             }
 
         }
@@ -165,14 +207,17 @@ void stencil_7_com(grid_param *p) {
             int y0 = 0, y1 = 1, y2 = 2;
             for (int yy = y_begin[z]; yy < y_end[z]; yy++) {
                 if (yy == y_begin[z]) {
+                    TIMING_COMMUNI_BEGIN;
                     get_reply = 0;
                     athread_get(PE_MODE, &src[INDEX(0, yy - 1, zz, ldx, ldy)], &origin[INDEX(0, 0, 1, ldx, 3)],
                                 ldx * 2 * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
                     while (get_reply != 1);
+                    TIMING_COMMUNI_END;
                 }
 
                 //use rotated array to avoid sloooooooow memcpy
 
+                TIMING_COMMUNI_BEGIN;
                 get_reply = 0;
                 athread_get(PE_MODE, &src[INDEX(0, yy + 1, zz, ldx, ldy)], &origin[INDEX(0, y2, 1, ldx, 3)],
                             ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
@@ -181,7 +226,9 @@ void stencil_7_com(grid_param *p) {
                 athread_get(PE_MODE, &src[INDEX(0, yy, zz + 1, ldx, ldy)], &origin[INDEX(0, y1, 2, ldx, 3)],
                             ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
                 while (get_reply != 3);
+                TIMING_COMMUNI_END;
 
+                TIMING_COMPUTE_BEGIN;
                 for (int x = x_begin; x < x_end; ++x) {
                     answer[INDEX(x, 0, 0, ldx, 1)] =
                             ALPHA_ZZZ * origin[INDEX(x, y1, 1, ldx, 3)]
@@ -193,7 +240,9 @@ void stencil_7_com(grid_param *p) {
                             + ALPHA_ZZP * origin[INDEX(x, y1, 2, ldx, 3)];
 
                 }
+                TIMING_COMPUTE_END;
 
+                TIMING_COMMUNI_BEGIN;
                 put_reply = 0;
                 athread_put(PE_MODE, answer, &dest[INDEX(0, yy, zz, ldx, ldy)],
                             ldx * 1 * 1 * sizeof(data_t),
@@ -203,6 +252,7 @@ void stencil_7_com(grid_param *p) {
                 y1 = (y1 + 1) % 3;
                 y2 = (y2 + 1) % 3;
                 while (put_reply != 1);
+                TIMING_COMMUNI_END;
             }
         }
 
@@ -220,6 +270,11 @@ void stencil_7_com(grid_param *p) {
 
 #ifdef PROFILING
     lwpf_exit(TEST);
+#endif
+#ifdef TIMING
+    if (pid == 1) {
+        cal_locked_printf("compute:%d, communicate:%d\n", compute, communicate);
+    }
 #endif
     return;
 }
@@ -296,6 +351,11 @@ void stencil_27_com(grid_param *p) {
     alpha_vector[5] = simd_set_doublev4(ALPHA_PNP, ALPHA_NZP, ALPHA_ZZP, ALPHA_PZP);
     alpha_vector[6] = simd_set_doublev4(ALPHA_NPP, ALPHA_ZPP, ALPHA_PPP, 0);
 
+#ifdef TIMING
+    unsigned long rpcc_begin, rpcc_end;
+    unsigned long compute = 0, communicate = 0;
+#endif
+
     for (int t = 0; t < nt; t++) {
         src = buffer[t % 2];
         dest = buffer[(t + 1) % 2];
@@ -308,6 +368,7 @@ void stencil_27_com(grid_param *p) {
             int zz = z_loc[z];
             for (int yy = y_begin[z]; yy < y_end[z]; yy++) {
                 if (yy == y_begin[z]) {
+                    TIMING_COMMUNI_BEGIN;
                     get_reply = 0;
                     athread_get(PE_MODE, &src[INDEX(0, yy - 1, zz - 1, ldx, ldy)], &origin[INDEX(0, 0, 0, ldx, 3)],
                                 ldx * 2 * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
@@ -316,10 +377,12 @@ void stencil_27_com(grid_param *p) {
                     athread_get(PE_MODE, &src[INDEX(0, yy - 1, zz + 1, ldx, ldy)], &origin[INDEX(0, 0, 2, ldx, 3)],
                                 ldx * 2 * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
                     while (get_reply != 3);
+                    TIMING_COMMUNI_END;
                 }
 
                 //use rotated array to avoid sloooooooow memcpy
 
+                TIMING_COMMUNI_BEGIN;
                 get_reply = 0;
                 athread_get(PE_MODE, &src[INDEX(0, yy + 1, zz - 1, ldx, ldy)], &origin[INDEX(0, y2, 0, ldx, 3)],
                             ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
@@ -328,8 +391,9 @@ void stencil_27_com(grid_param *p) {
                 athread_get(PE_MODE, &src[INDEX(0, yy + 1, zz + 1, ldx, ldy)], &origin[INDEX(0, y2, 2, ldx, 3)],
                             ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
                 while (get_reply != 3);
+                TIMING_COMMUNI_END;
 
-
+                TIMING_COMPUTE_BEGIN;
                 for (int x = x_begin; x < x_end; ++x) {
                     _memcpy(data, &origin[INDEX(x - 1, y0, 0, ldx, 3)], 3);
                     _memcpy(data + 3, &origin[INDEX(x - 1, y1, 0, ldx, 3)], 3);
@@ -355,7 +419,9 @@ void stencil_27_com(grid_param *p) {
                     simd_store(data_vector[0], data);
                     answer[INDEX(x, 0, 0, ldx, 1)] = data[0] + data[1] + data[2] + data[3];
                 }
+                TIMING_COMPUTE_END;
 
+                TIMING_COMMUNI_BEGIN;
                 put_reply = 0;
                 athread_put(PE_MODE, answer, &dest[INDEX(0, yy, zz, ldx, ldy)],
                             ldx * 1 * 1 * sizeof(data_t),
@@ -365,6 +431,7 @@ void stencil_27_com(grid_param *p) {
                 y1 = (y1 + 1) % 3;
                 y2 = (y2 + 1) % 3;
                 while (put_reply != 1);
+                TIMING_COMMUNI_END;
             }
 
         }
@@ -389,6 +456,7 @@ void stencil_27_com(grid_param *p) {
             int y0 = 0, y1 = 1, y2 = 2;
             for (int yy = y_begin[z]; yy < y_end[z]; yy++) {
                 if (yy == y_begin[z]) {
+                    TIMING_COMMUNI_BEGIN;
                     get_reply = 0;
                     athread_get(PE_MODE, &src[INDEX(0, yy - 1, zz - 1, ldx, ldy)], &origin[INDEX(0, 0, 0, ldx, 3)],
                                 ldx * 2 * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
@@ -397,7 +465,9 @@ void stencil_27_com(grid_param *p) {
                     athread_get(PE_MODE, &src[INDEX(0, yy - 1, zz + 1, ldx, ldy)], &origin[INDEX(0, 0, 2, ldx, 3)],
                                 ldx * 2 * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
                     while (get_reply != 3);
+                    TIMING_COMMUNI_END;
                 }
+                TIMING_COMMUNI_BEGIN;
                 get_reply = 0;
                 athread_get(PE_MODE, &src[INDEX(0, yy + 1, zz - 1, ldx, ldy)], &origin[INDEX(0, y2, 0, ldx, 3)],
                             ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
@@ -406,7 +476,9 @@ void stencil_27_com(grid_param *p) {
                 athread_get(PE_MODE, &src[INDEX(0, yy + 1, zz + 1, ldx, ldy)], &origin[INDEX(0, y2, 2, ldx, 3)],
                             ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
                 while (get_reply != 3);
+                TIMING_COMMUNI_END;
 
+                TIMING_COMPUTE_BEGIN;
                 for (int x = x_begin; x < x_end; ++x) {
                     _memcpy(data, &origin[INDEX(x - 1, y0, 0, ldx, 3)], 3);
                     _memcpy(data + 3, &origin[INDEX(x - 1, y1, 0, ldx, 3)], 3);
@@ -431,7 +503,9 @@ void stencil_27_com(grid_param *p) {
                     simd_store(data_vector[0], data);
                     answer[INDEX(x, 0, 0, ldx, 1)] = data[0] + data[1] + data[2] + data[3];
                 }
+                TIMING_COMPUTE_END;
 
+                TIMING_COMMUNI_BEGIN;
                 put_reply = 0;
                 athread_put(PE_MODE, answer, &dest[INDEX(0, yy, zz, ldx, ldy)],
                             ldx * 1 * 1 * sizeof(data_t),
@@ -441,6 +515,7 @@ void stencil_27_com(grid_param *p) {
                 y1 = (y1 + 1) % 3;
                 y2 = (y2 + 1) % 3;
                 while (put_reply != 1);
+                TIMING_COMMUNI_END;
             }
         }
 
@@ -455,6 +530,11 @@ void stencil_27_com(grid_param *p) {
         }
         athread_syn(ARRAY_SCOPE, 0xffff);
     }
+#ifdef TIMING
+    if (pid == 1) {
+        cal_locked_printf("compute:%d, communicate:%d\n", compute, communicate);
+    }
+#endif
 
 #ifdef PROFILING
     lwpf_exit(TEST);
