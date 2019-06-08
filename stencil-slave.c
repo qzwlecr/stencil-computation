@@ -140,27 +140,23 @@ void stencil_7_com(grid_param *p) {
             }
 
         }
-        //if(id == 0) while(runnable0==0)
-        //if (id == 0){
-        int finish0 = 0,finish1 = 0;
+        int finish0 = 0, finish1 = 0;
 
         int z = -1;
         //int zz = z_loc[z];
-        while(1){
-            if(finish0 && finish1) break;
-            z = -1;
-            if(runnable0 == 2) finish0 = 1;
-            if(runnable1 == 2) finish1 = 1;
-            if(runnable0 == 1 && finish0 == 0){
+        while (1) {
+            if (finish0 && finish1) break;
+            if (runnable0 == 2) finish0 = 1;
+            if (runnable1 == 2) finish1 = 1;
+            if (runnable0 == 1 && finish0 == 0) {
                 z = 3;
                 finish0 = 1;
-            }
-            else if(runnable1 == 1 && finish1 == 0){
+            } else if (runnable1 == 1 && finish1 == 0) {
                 z = 2;
                 finish1 = 1;
+            } else {
+                continue;
             }
-            if(z == -1) continue;
-            //athread_syn(ARRAY_SCOPE, 0xffff); 
             int zz = z_loc[z];
             int y0 = 0, y1 = 1, y2 = 2;
             for (int yy = y_begin[z]; yy < y_end[z]; yy++) {
@@ -205,12 +201,6 @@ void stencil_7_com(grid_param *p) {
                 while (put_reply != 1);
             }
         }
-            
-        //}
-        
-        
-        //athread_syn(ARRAY_SCOPE, 0xffff); //看不懂
-        
 
 #ifdef PROFILING
         lwpf_stop(A);
@@ -448,7 +438,7 @@ void stencil_27_com(grid_param *p) {
 #endif
         athread_syn(ARRAY_SCOPE, 0xffff);
         if (id == 0) {
-           // runnable = 0;
+            // runnable = 0;
             *p->non_runnable = 0;
         }
         athread_syn(ARRAY_SCOPE, 0xffff);
