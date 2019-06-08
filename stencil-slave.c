@@ -144,14 +144,15 @@ void stencil_7_com(grid_param *p) {
 
         int z = -1;
         //int zz = z_loc[z];
+
         while (1) {
             if (finish0 && finish1) break;
-            if (runnable0 == 2) finish0 = 1;
-            if (runnable1 == 2) finish1 = 1;
-            if (runnable0 == 1 && finish0 == 0) {
+            //if (runnable0 == 2) finish0 = 1;
+            //if (runnable1 == 2) finish1 = 1;
+            if (runnable0  && finish0 == 0) {
                 z = 3;
                 finish0 = 1;
-            } else if (runnable1 == 1 && finish1 == 0) {
+            } else if (runnable1  && finish1 == 0) {
                 z = 2;
                 finish1 = 1;
             } else {
