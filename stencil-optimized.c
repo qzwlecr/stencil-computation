@@ -196,7 +196,7 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
                 MPI_Irecv((void *) (a0 + z_end * ldx * ldy), 1, xyplane,
                           pid + grid_info->num_x * grid_info->num_y,
                           pid + grid_info->num_x * grid_info->num_y,
-                          MPI_COMM_WORLD, &reques[0]t[count0++]);
+                          MPI_COMM_WORLD, &request[0][count0++]);
             } else if (pid / grid_info->num_x / grid_info->num_y == grid_info->num_z - 1) {
                 MPI_Isend((void *) (a0 + z_start * ldx * ldy), 1, xyplane,
                           pid - grid_info->num_x * grid_info->num_y,
@@ -235,22 +235,43 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
 #endif
         non_runnable = 1;
         //assume that pid % 4 == cgid
-        bool flag0 = FALSE;
-        bool flag1 = FALSE;
+        int flag0 = 0;
+        int flag1 = 0;
+        int runnable0_flag = 0;
+        int runnable1_flag = 0;
+        if(count0 == 0) {
+            flag0 = runnable0_flag = 2;
+            for(int i = 0;i < 64;i ++) h2ldm(runnable0, i, pid % 4) = 2;
+            // h2ldm(runnable0, 0, pid % 4) = 2;
+        }
+        if(count1 == 0) {
+            flag1 = runnable1_flag = 2;
+            for(int i = 0;i < 64;i ++) h2ldm(runnable1, i, pid % 4) = 2;
+            // h2ldm(runnable1, 0, pid % 4) = 2;
+        }
+        
         while(1){
             if(!flag0) MPI_Test(request[0],&flag0,status[0]);
             if(!flag1) MPI_Test(request[1],&flag1,status[1]);
-            if(flag0&&flag1) break;
-            if(flag0&&runnable0==0){
-                h2ldm(runnable0, 0, pid % 4) = 1;
+            
+            if(flag0&&runnable0_flag==0){
+                runnable0_flag = 1;
+                for(int i = 0;i < 64;i ++) h2ldm(runnable0, i, pid % 4) = 1;
+                //h2ldm(runnable0, 0, pid % 4) = 1;
             }
-            if(flag1&&runnable1==0){
-                h2ldm(runnable1, 0, pid % 4) = 1;
+            if(flag1&&runnable1_flag==0){
+                runnable1_flag = 1;
+                for(int i = 0;i < 64;i ++) h2ldm(runnable1, i, pid % 4) = 1;
+                //h2ldm(runnable1, 0, pid % 4) = 1;
             }
+            if(runnable0_flag&&runnable1_flag) break;
             //MPI_Waitall(count, request, status);
             //h2ldm(runnable, 0, pid % 4) = 1;
         }
+        //printf("---------end ---------")
+        printf("end %d mpi transform and wait non_runnable\n",pid);
         while (non_runnable == 1);
+        printf("end %d mpi transform and wait non_runnable\n",pid);
 
     }
     athread_join();
@@ -310,8 +331,8 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
         a1 = buffer[(t + 1) % 2];
         MPI_Status status[2][6];
         MPI_Request request[2][6];
+        int count0 = 0;
         int count1 = 0;
-        int count2 = 0;
 #ifdef TIMING
         double temp = timer(), temp2;
         if (pid == 1) {
@@ -382,7 +403,7 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
                 MPI_Irecv((void *) (a0 + z_end * ldx * ldy), 1, xyplane,
                           pid + grid_info->num_x * grid_info->num_y,
                           pid + grid_info->num_x * grid_info->num_y,
-                          MPI_COMM_WORLD, &reques[0]t[count0++]);
+                          MPI_COMM_WORLD, &request[0][count0++]);
             } else if (pid / grid_info->num_x / grid_info->num_y == grid_info->num_z - 1) {
                 MPI_Isend((void *) (a0 + z_start * ldx * ldy), 1, xyplane,
                           pid - grid_info->num_x * grid_info->num_y,
@@ -422,8 +443,8 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
 #endif
         non_runnable = 1;
 //assume that pid % 4 == cgid
-        h2ldm(runnable, 0, pid % 4) = 1;
-        while (non_runnable == 1);
+        // h2ldm(runnable, 0, pid % 4) = 1;
+        // while (non_runnable == 1);
     }
     athread_join();
 #ifdef TIMING
