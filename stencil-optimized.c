@@ -251,8 +251,11 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
         }
         
         while(1){
-            if(!flag0) MPI_Test(request[0],&flag0,status[0]);
-            if(!flag1) MPI_Test(request[1],&flag1,status[1]);
+            //MPI_Waitall(count0,request[0],status[0]);
+            //MPI_Waitall(count1,request[1],status[1]);
+            //for(int i = 0;i < cou)
+            if(!flag0) MPI_Testall(count0,request[0],&flag0,status[0]);
+            if(!flag1) MPI_Testall(count1,request[1],&flag1,status[1]);
             
             if(flag0&&runnable0_flag==0){
                 runnable0_flag = 1;
@@ -269,9 +272,9 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
             //h2ldm(runnable, 0, pid % 4) = 1;
         }
         //printf("---------end ---------")
-        printf("end %d mpi transform and wait non_runnable\n",pid);
+        //printf("end %d mpi transform and wait non_runnable\n",pid);
         while (non_runnable == 1);
-        printf("end %d mpi transform and wait non_runnable\n",pid);
+        //printf("end %d mpi transform and wait non_runnable\n",pid);
 
     }
     athread_join();
