@@ -48,8 +48,11 @@ void stencil_7_com(grid_param *p) {
     int x_end = local_size_x + halo_size_x;
 
     int z_loc[4];
+    int y_loc[4];
+
     int y_begin[4];
     int y_end[4];
+
     y_begin[0] = per_size * id % local_size_y + halo_size_y;
     y_end[0] = per_size * (id + 1) % local_size_y + halo_size_y;
 
@@ -74,6 +77,8 @@ void stencil_7_com(grid_param *p) {
     z_loc[2] = 1;//
     z_loc[3] = local_size_z;//
 
+
+
     int ldx = local_size_x + 2 * halo_size_x;
     int ldy = local_size_y + 2 * halo_size_y;
 
@@ -95,6 +100,7 @@ void stencil_7_com(grid_param *p) {
         lwpf_start(A);
 #endif
         //deal with main part
+        //这部分中
         for (int z = 0; z <= 1; z++) {
             int y0 = 0, y1 = 1, y2 = 2;
             int zz = z_loc[z];
@@ -141,7 +147,7 @@ void stencil_7_com(grid_param *p) {
             }
 
         }
-        int finish[6] = {0};//0:left_x 1:right_x 2:left_y 3:right_y 4:left_z 5:right_z 没有其实不应该按左右来分但是你明白我意思就行
+        int finish[6] = {0};//0:left_x 1:right_x 2:left_y 3:right_y 4:left_z 5:right_z 没有其实不应该按左右来分但是明白我意思就行
 
         int z = -1;
         int y = -1;
@@ -159,22 +165,22 @@ void stencil_7_com(grid_param *p) {
                 z = 2;
                 finish[5] = 1;
             } else if (runnable[2] && finish[2] == 0) {
-                //y = 3;
+                y = 3;
                 finish[2] = 1;
             } else if (runnable[3] && finish[3] == 0) {
-               // y = 2;
+                y = 2;
                 finish[3] = 1;
             } else if (runnable[0] && finish[0] == 0) {
-                //x = 3;
+                x = 3;
                 finish[0] = 1;
             } else if (runnable[1] && finish[1] == 0) {
-                //x = 2;
+                x = 2;
                 finish[1] = 1;
             } else {
                 continue;
             }
 
-            if (finish[4] || finish[5]) {//compute z 的 上面 或者 下面 两条
+            if (z == 2 || z == 3) {//compute z 的 上面 或者 下面 两条
                 int zz = z_loc[z];
                 int y0 = 0, y1 = 1, y2 = 2;
                 for (int yy = y_begin[z]; yy < y_end[z]; yy++) {
@@ -218,9 +224,10 @@ void stencil_7_com(grid_param *p) {
                     y2 = (y2 + 1) % 3;
                     while (put_reply != 1);
                 }
+                z = -1;
             }
 
-            if (finish[2] || finish[3]) {//compute y 的两头 还没改可能存在的y_loc,在改了.jpg
+            if (y == 2 || y == 3) {//compute y 的两头 还没改可能存在的y_loc,在改了.jpg
                 int zz = z_loc[z];
                 int y0 = 0, y1 = 1, y2 = 2;
                 for (int yy = y_begin[z]; yy < y_end[z]; yy++) {
@@ -264,9 +271,10 @@ void stencil_7_com(grid_param *p) {
                     y2 = (y2 + 1) % 3;
                     while (put_reply != 1);
                 }
+                y = -1;
             }
 
-            if (finish[0] || finish[1]) {//compute x 的两头 搞不懂怎么切的，再改
+            if (x == 2 || x == 3) {//compute x 的两头 搞不懂怎么切的，再改
                 int zz = z_loc[z];
                 int y0 = 0, y1 = 1, y2 = 2;
                 for (int yy = y_begin[z]; yy < y_end[z]; yy++) {
@@ -310,6 +318,7 @@ void stencil_7_com(grid_param *p) {
                     y2 = (y2 + 1) % 3;
                     while (put_reply != 1);
                 }
+                x = -1;
             }
         }
 
