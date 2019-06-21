@@ -27,7 +27,7 @@ __thread_local volatile int runnable[6] = {0};// 0:left_x 1:right_x 2:left_y 3:r
 
 void stencil_7_com(grid_param *p) {
 #ifdef PROFILING
-    lwpf_enter(TEST);   
+    lwpf_enter(TEST);
 #endif
     int id = athread_get_id(-1);
     int pid = p->grid_info->p_id;
@@ -43,17 +43,13 @@ void stencil_7_com(grid_param *p) {
     //int tot_size = local_size_y * (local_size_z - 2);
     //the highest and lowest layer wouldn't be computed first.
 
-    int tot_size = (local_size_y-2) * (local_size_z - 2);
+    int tot_size = (local_size_y - 2) * (local_size_z - 2);//?
     //y z 方向四块不会被首先计算
 
     int per_size = tot_size / THREAD_NUM;
 
     int x_begin = halo_size_x;
     int x_end = local_size_x + halo_size_x;
-
-
-    //int x_begin[4];//
-    //int x_end[4];//
 
     int z_loc[4];
     int y_loc[4];//
@@ -62,15 +58,18 @@ void stencil_7_com(grid_param *p) {
     int y_begin[4];
     int y_end[4];
 
-    y_begin[0] = per_size * id % local_size_y + halo_size_y;
-    y_end[0] = per_size * (id + 1) % local_size_y + halo_size_y;
+    //y_begin[0] = per_size * id % local_size_y + halo_size_y;
+    //y_end[0] = per_size * (id + 1) % local_size_y + halo_size_y;
 
-    y_begin[1] = halo_size_y;
+    y_begin[0] = per_size * id % local_size_y + halo_size_y + 1;
+    y_end[0] = per_size * (id + 1) % local_size_y + halo_size_y - 1;
+
+    y_begin[1] = halo_size_y + 1;
     if (y_end[0] < y_begin[0]) {
         y_end[1] = y_end[0];
-        y_end[0] = local_size_y + halo_size_y;
+        y_end[0] = local_size_y + halo_size_y - 1;
     } else {
-        y_end[1] = halo_size_y;
+        y_end[1] = halo_size_y - 1;
     }
 
     //compute the highest and lowest layer.
@@ -87,10 +86,11 @@ void stencil_7_com(grid_param *p) {
     z_loc[3] = local_size_z;//
 
 
-    y_loc[0] = 1;
-    y_loc[1] = 2;
-    y_loc[2] = 3;//
-    y_loc[3] = 4;
+    y_loc[0] = 1;//fake
+    y_loc[1] = 2;//fake
+    y_loc[2] = 1;//true
+    y_loc[3] = local_size_y;//true
+
 
     int ldx = local_size_x + 2 * halo_size_x;
     int ldy = local_size_y + 2 * halo_size_y;
@@ -126,7 +126,6 @@ void stencil_7_com(grid_param *p) {
                 }
 
                 //use rotated array to avoid sloooooooow memcpy
-
                 get_reply = 0;
                 athread_get(PE_MODE, &src[INDEX(0, yy + 1, zz, ldx, ldy)], &origin[INDEX(0, y2, 1, ldx, 3)],
                             ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
@@ -240,23 +239,28 @@ void stencil_7_com(grid_param *p) {
                 z = -1;
             }
 
-            if (y == 2 || y == 3) {//compute y 的两头 还没改可能存在的y_loc,在改了.jpg
-                int zz = z_loc[z];
+            if (y == 2 || y == 3) {//compute y 的两边,在改了.jpg
+
+                int yy = y_loc[y];
+                int z_begin = 1;
+                int z_end = local_size_z;
+
+                //int zz = z_loc[z];
                 int y0 = 0, y1 = 1, y2 = 2;
-                for (int yy = y_begin[z]; yy < y_end[z]; yy++) {
-                    if (yy == y_begin[z]) {
+                for (int zz = z_begin; zz < z_end; zz++) {
+                    if (zz == z_begin) {
                         get_reply = 0;
-                        athread_get(PE_MODE, &src[INDEX(0, yy - 1, zz, ldx, ldy)], &origin[INDEX(0, 0, 1, ldx, 3)],
-                                    ldx * 2 * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
+                        athread_get(PE_MODE, &src[INDEX(0, yy, zz - 1, ldx, ldy)], &origin[INDEX(0, y1, 0, ldx, 3)],
+                                    ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
                         while (get_reply != 1);
                     }
-W
+
                     //use rotated array to avoid sloooooooow memcpy
 
                     get_reply = 0;
+                    athread_get(PE_MODE, &src[INDEX(0, yy - 1, zz, ldx, ldy)], &origin[INDEX(0, 0, 1, ldx, 3)],
+                                ldx * 2 * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
                     athread_get(PE_MODE, &src[INDEX(0, yy + 1, zz, ldx, ldy)], &origin[INDEX(0, y2, 1, ldx, 3)],
-                                ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
-                    athread_get(PE_MODE, &src[INDEX(0, yy, zz - 1, ldx, ldy)], &origin[INDEX(0, y1, 0, ldx, 3)],
                                 ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
                     athread_get(PE_MODE, &src[INDEX(0, yy, zz + 1, ldx, ldy)], &origin[INDEX(0, y1, 2, ldx, 3)],
                                 ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
@@ -285,8 +289,9 @@ W
                     while (put_reply != 1);
                 }
                 y = -1;
-            }
 
+            }
+            /*
             if (x == 2 || x == 3) {//compute x 的两头 搞不懂怎么切的，再改
                 int zz = z_loc[z];
                 int y0 = 0, y1 = 1, y2 = 2;
@@ -333,6 +338,7 @@ W
                 }
                 x = -1;
             }
+             */
         }
 
 #ifdef PROFILING
