@@ -27,7 +27,7 @@ __thread_local volatile int runnable[6] = {0};// 0:left_x 1:right_x 2:left_y 3:r
 
 void stencil_7_com(grid_param *p) {
 #ifdef PROFILING
-    lwpf_enter(TEST);
+    lwpf_enter(TEST);   
 #endif
     int id = athread_get_id(-1);
     int pid = p->grid_info->p_id;
@@ -40,15 +40,24 @@ void stencil_7_com(grid_param *p) {
     int halo_size_y = p->grid_info->halo_size_y;
     int halo_size_z = p->grid_info->halo_size_z;
 
-    int tot_size = local_size_y * (local_size_z - 2);
+    //int tot_size = local_size_y * (local_size_z - 2);
     //the highest and lowest layer wouldn't be computed first.
+
+    int tot_size = (local_size_y-2) * (local_size_z - 2);
+    //y z 方向四块不会被首先计算
+
     int per_size = tot_size / THREAD_NUM;
 
     int x_begin = halo_size_x;
     int x_end = local_size_x + halo_size_x;
 
+
+    //int x_begin[4];//
+    //int x_end[4];//
+
     int z_loc[4];
-    int y_loc[4];
+    int y_loc[4];//
+    //int x_loc[4];//
 
     int y_begin[4];
     int y_end[4];
@@ -78,6 +87,10 @@ void stencil_7_com(grid_param *p) {
     z_loc[3] = local_size_z;//
 
 
+    y_loc[0] = 1;
+    y_loc[1] = 2;
+    y_loc[2] = 3;//
+    y_loc[3] = 4;
 
     int ldx = local_size_x + 2 * halo_size_x;
     int ldy = local_size_y + 2 * halo_size_y;
@@ -237,7 +250,7 @@ void stencil_7_com(grid_param *p) {
                                     ldx * 2 * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
                         while (get_reply != 1);
                     }
-
+W
                     //use rotated array to avoid sloooooooow memcpy
 
                     get_reply = 0;
