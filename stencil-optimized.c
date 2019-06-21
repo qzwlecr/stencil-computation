@@ -65,9 +65,9 @@ void create_dist_grid(dist_grid_info_t *grid_info, int stencil_type) {
     grid_info->halo_size_z = 1;
     athread_init();
     int spe_cnt = athread_get_max_threads();
-    if (spe_cnt != 64) {
-        fprintf(stderr, "This CG cannot afford 64 SPEs (%d only).\n", spe_cnt);
-    }
+    // if (spe_cnt != 64) {
+    //     fprintf(stderr, "This CG cannot afford 64 SPEs (%d only).\n", spe_cnt);
+    // }
 #ifdef PROFILING
     conf.pcrc = PCRC_ALL;
     conf.pcr0 = PC0_CYCLE;
@@ -449,9 +449,47 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
         time_consumed += temp2 - temp;
 #endif
         non_runnable = 1;
-//assume that pid % 4 == cgid
-        // h2ldm(runnable, 0, pid % 4) = 1;
-        // while (non_runnable == 1);
+        //assume that pid % 4 == cgid
+        int flag0 = 0;
+        int flag1 = 0;
+        int runnable0_flag = 0;
+        int runnable1_flag = 0;
+        if (count0 == 0) {
+            flag0 = 2;
+            runnable0_flag = 2;
+            for (int i = 0; i < 64; i++) h2ldm(runnable0, i, pid % 4) = 2;
+            // h2ldm(runnable0, 0, pid % 4) = 2;
+        }
+        if (count1 == 0) {
+            flag1 = 2;
+            runnable1_flag = 2;
+            for (int i = 0; i < 64; i++) h2ldm(runnable1, i, pid % 4) = 2;
+            // h2ldm(runnable1, 0, pid % 4) = 2;
+        }
+
+        while (1) {
+            if (runnable0_flag == 0) {
+                MPI_Testall(count0, request[0], &flag0, status[0]);
+            }
+
+            if (runnable1_flag == 0) {
+                MPI_Testall(count1, request[1], &flag1, status[1]);
+            }
+
+            if (flag0 != 0 && runnable0_flag == 0) {
+                runnable0_flag = 1;
+                for (int i = 0; i < 64; i++)
+                    h2ldm(runnable0, i, pid % 4) = 1;
+            }
+            if (flag1 != 0 && runnable1_flag == 0) {
+                runnable1_flag = 1;
+                for (int i = 0; i < 64; i++)
+                    h2ldm(runnable1, i, pid % 4) = 1;
+            }
+            if (runnable0_flag && runnable1_flag)
+                break;
+        }
+        while (non_runnable == 1);
     }
     athread_join();
 #ifdef TIMING

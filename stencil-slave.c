@@ -362,11 +362,22 @@ void stencil_27_com(grid_param *p) {
 
         // if (id == 0)
         //     while (runnable == 0);
-        athread_syn(ARRAY_SCOPE, 0xffff);
-
-        for (int z = 2; z <= 3; z++) {
-            int y0 = 0, y1 = 1, y2 = 2;
+        //athread_syn(ARRAY_SCOPE, 0xffff);
+        int finish0 = 0, finish1 = 0;
+        int z = -1;
+        while(1){
+            if (finish0 && finish1) break;
+            if (runnable0  && finish0 == 0) {
+                z = 3;
+                finish0 = 1;
+            } else if (runnable1  && finish1 == 0) {
+                z = 2;
+                finish1 = 1;
+            } else {
+                continue;
+            }
             int zz = z_loc[z];
+            int y0 = 0, y1 = 1, y2 = 2;
             for (int yy = y_begin[z]; yy < y_end[z]; yy++) {
                 if (yy == y_begin[z]) {
                     get_reply = 0;
@@ -378,10 +389,7 @@ void stencil_27_com(grid_param *p) {
                                 ldx * 2 * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
                     while (get_reply != 3);
                 }
-
-                //use rotated array to avoid sloooooooow memcpy
-
-                get_reply = 0;
+                 get_reply = 0;
                 athread_get(PE_MODE, &src[INDEX(0, yy + 1, zz - 1, ldx, ldy)], &origin[INDEX(0, y2, 0, ldx, 3)],
                             ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
                 athread_get(PE_MODE, &src[INDEX(0, yy + 1, zz, ldx, ldy)], &origin[INDEX(0, y2, 1, ldx, 3)],
@@ -420,7 +428,7 @@ void stencil_27_com(grid_param *p) {
                             + ALPHA_NPP * origin[INDEX(x - 1, y2, 2, ldx, 3)]
                             + ALPHA_PPP * origin[INDEX(x + 1, y2, 2, ldx, 3)];
 
-                }
+                    }
 
                 put_reply = 0;
                 athread_put(PE_MODE, answer, &dest[INDEX(0, yy, zz, ldx, ldy)],
@@ -431,6 +439,10 @@ void stencil_27_com(grid_param *p) {
                 y1 = (y1 + 1) % 3;
                 y2 = (y2 + 1) % 3;
                 while (put_reply != 1);
+
+                //use rotated array to avoid sloooooooow memcpy
+
+                
             }
         }
 
@@ -438,8 +450,9 @@ void stencil_27_com(grid_param *p) {
         lwpf_stop(A);
 #endif
         athread_syn(ARRAY_SCOPE, 0xffff);
+        runnable0 = 0;
+        runnable1 = 0;
         if (id == 0) {
-            // runnable = 0;
             *p->non_runnable = 0;
         }
         athread_syn(ARRAY_SCOPE, 0xffff);
