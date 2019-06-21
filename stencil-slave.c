@@ -6,7 +6,7 @@
 #include "simd.h"
 #include "common.h"
 
-#define PROFILING
+//#define PROFILING
 
 #ifdef PROFILING
 #define CPE

@@ -6,7 +6,7 @@
 #include "common.h"
 
 //#define PROFILING
-#define TIMING
+//#define TIMING
 
 #ifdef PROFILING
 #define MPE
