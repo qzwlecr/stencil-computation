@@ -6,7 +6,7 @@
 #include "simd.h"
 #include "common.h"
 
-//#define PROFILING
+#define PROFILING
 
 #ifdef PROFILING
 #define CPE
@@ -27,10 +27,10 @@ __thread_local volatile int runnable1 = 0;
 
 __thread_local doublev4 alpha_vector[9];
 __thread_local doublev4 data_vector[9];
-__thread_local double data[27];
+__thread_local double data[28];
 
 void _memcpy(double *dst,const double *src,int len){
-    for(int i = 0;i < 3;i++) dst[i] = src[i];
+    for(int i = 0;i < len;i++) dst[i] = src[i];
 }
 
 void stencil_7_com(grid_param *p) {
@@ -333,7 +333,8 @@ void stencil_27_com(grid_param *p) {
 
                 for (int x = x_begin; x < x_end; ++x) {
                     // memcpy(data,&origin[INDEX(x - 1,y1 - 1,)])
-                    _memcpy(data,&origin[INDEX(x - 1, y0 ,0,ldx,3)],3);
+                    data[27] = 0;
+                    _memcpy(data    ,&origin[INDEX(x - 1, y0 ,0,ldx,3)],3);
                     _memcpy(data + 3,&origin[INDEX(x - 1, y1 ,0,ldx,3)],3);
                     _memcpy(data + 6,&origin[INDEX(x - 1, y2 ,0,ldx,3)],3);
                     _memcpy(data + 9,&origin[INDEX(x - 1, y0 ,1,ldx,3)],3);
