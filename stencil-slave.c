@@ -25,6 +25,14 @@ extern volatile int non_runnable;
 __thread_local volatile int runnable0 = 0;
 __thread_local volatile int runnable1 = 0;
 
+__thread_local doublev4 alpha_vector[9];
+__thread_local doublev4 data_vector[9];
+__thread_local double data[27];
+
+void _memcpy(double *dst,const double *src,int len){
+    for(int i = 0;i < 3;i++) dst[i] = src[i];
+}
+
 void stencil_7_com(grid_param *p) {
 #ifdef PROFILING
     lwpf_enter(TEST);
@@ -225,6 +233,13 @@ void stencil_27_com(grid_param *p) {
 #ifdef PROFILING
     lwpf_enter(TEST);
 #endif
+    alpha_vector[0] = simd_set_doublev4(ALPHA_NNN, ALPHA_ZNN, ALPHA_PNN, ALPHA_NZN);
+    alpha_vector[1] = simd_set_doublev4(ALPHA_ZZN, ALPHA_PZN, ALPHA_NPN, ALPHA_ZPN);
+    alpha_vector[2] = simd_set_doublev4(ALPHA_PPN, ALPHA_NNZ, ALPHA_ZNZ, ALPHA_PNZ);
+    alpha_vector[3] = simd_set_doublev4(ALPHA_NZZ, ALPHA_ZZZ, ALPHA_PZZ, ALPHA_NPZ);
+    alpha_vector[4] = simd_set_doublev4(ALPHA_ZPZ, ALPHA_PPZ, ALPHA_NNP, ALPHA_ZNP);
+    alpha_vector[5] = simd_set_doublev4(ALPHA_PNP, ALPHA_NZP, ALPHA_ZZP, ALPHA_PZP);
+    alpha_vector[6] = simd_set_doublev4(ALPHA_NPP, ALPHA_ZPP, ALPHA_PPP, 0);
     int id = athread_get_id(-1);
     int pid = p->grid_info->p_id;
     volatile int get_reply = 0, put_reply = 0;
@@ -315,36 +330,60 @@ void stencil_27_com(grid_param *p) {
                             ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
                 while (get_reply != 3);
 
-                for (int x = x_begin; x < x_end; ++x) {
-                    answer[INDEX(x, 0, 0, ldx, 1)] =
-                            ALPHA_ZZZ * origin[INDEX(x, y1, 1, ldx, 3)]
-                            + ALPHA_NZZ * origin[INDEX(x - 1, y1, 1, ldx, 3)]
-                            + ALPHA_PZZ * origin[INDEX(x + 1, y1, 1, ldx, 3)]
-                            + ALPHA_ZNZ * origin[INDEX(x, y0, 1, ldx, 3)]
-                            + ALPHA_ZPZ * origin[INDEX(x, y2, 1, ldx, 3)]
-                            + ALPHA_ZZN * origin[INDEX(x, y1, 0, ldx, 3)]
-                            + ALPHA_ZZP * origin[INDEX(x, y1, 2, ldx, 3)]
-                            + ALPHA_NNZ * origin[INDEX(x - 1, y0, 1, ldx, 3)]
-                            + ALPHA_PNZ * origin[INDEX(x + 1, y0, 1, ldx, 3)]
-                            + ALPHA_NPZ * origin[INDEX(x - 1, y2, 1, ldx, 3)]
-                            + ALPHA_PPZ * origin[INDEX(x + 1, y2, 1, ldx, 3)]
-                            + ALPHA_NZN * origin[INDEX(x - 1, y1, 0, ldx, 3)]
-                            + ALPHA_PZN * origin[INDEX(x + 1, y1, 0, ldx, 3)]
-                            + ALPHA_NZP * origin[INDEX(x - 1, y1, 2, ldx, 3)]
-                            + ALPHA_PZP * origin[INDEX(x + 1, y1, 2, ldx, 3)]
-                            + ALPHA_ZNN * origin[INDEX(x, y0, 0, ldx, 3)]
-                            + ALPHA_ZPN * origin[INDEX(x, y2, 0, ldx, 3)]
-                            + ALPHA_ZNP * origin[INDEX(x, y0, 2, ldx, 3)]
-                            + ALPHA_ZPP * origin[INDEX(x, y2, 2, ldx, 3)]
-                            + ALPHA_NNN * origin[INDEX(x - 1, y0, 0, ldx, 3)]
-                            + ALPHA_PNN * origin[INDEX(x + 1, y0, 0, ldx, 3)]
-                            + ALPHA_NPN * origin[INDEX(x - 1, y2, 0, ldx, 3)]
-                            + ALPHA_PPN * origin[INDEX(x + 1, y2, 0, ldx, 3)]
-                            + ALPHA_NNP * origin[INDEX(x - 1, y0, 2, ldx, 3)]
-                            + ALPHA_PNP * origin[INDEX(x + 1, y0, 2, ldx, 3)]
-                            + ALPHA_NPP * origin[INDEX(x - 1, y2, 2, ldx, 3)]
-                            + ALPHA_PPP * origin[INDEX(x + 1, y2, 2, ldx, 3)];
 
+                for (int x = x_begin; x < x_end; ++x) {
+                    // memcpy(data,&origin[INDEX(x - 1,y1 - 1,)])
+                    _memcpy(data,&origin[INDEX(x - 1, y0 ,0,ldx,3)],3);
+                    _memcpy(data + 3,&origin[INDEX(x - 1, y1 ,0,ldx,3)],3);
+                    _memcpy(data + 6,&origin[INDEX(x - 1, y2 ,0,ldx,3)],3);
+                    _memcpy(data + 9,&origin[INDEX(x - 1, y0 ,1,ldx,3)],3);
+                    _memcpy(data + 12,&origin[INDEX(x - 1, y1 ,1,ldx,3)],3);
+                    _memcpy(data + 15,&origin[INDEX(x - 1, y2 ,1,ldx,3)],3);
+                    _memcpy(data + 18,&origin[INDEX(x - 1, y0 ,2,ldx,3)],3);
+                    _memcpy(data + 21,&origin[INDEX(x - 1, y1 ,2,ldx,3)],3);
+                    _memcpy(data + 24,&origin[INDEX(x - 1, y2 ,2,ldx,3)],3);
+                    
+                    simd_load(data_vector[0], data);
+                    simd_load(data_vector[1], data + 4);
+                    simd_load(data_vector[2], data + 8);
+                    simd_load(data_vector[3], data + 12);
+                    simd_load(data_vector[4], data + 16);
+                    simd_load(data_vector[5], data + 20);
+                    simd_load(data_vector[6], data + 24);
+
+
+                    // answer[INDEX(x, 0, 0, ldx, 1)] =
+                    //         ALPHA_ZZZ * origin[INDEX(x, y1, 1, ldx, 3)]
+                    //         + ALPHA_NZZ * origin[INDEX(x - 1, y1, 1, ldx, 3)]
+                    //         + ALPHA_PZZ * origin[INDEX(x + 1, y1, 1, ldx, 3)]
+                    //         + ALPHA_ZNZ * origin[INDEX(x, y0, 1, ldx, 3)]
+                    //         + ALPHA_ZPZ * origin[INDEX(x, y2, 1, ldx, 3)]
+                    //         + ALPHA_ZZN * origin[INDEX(x, y1, 0, ldx, 3)]
+                    //         + ALPHA_ZZP * origin[INDEX(x, y1, 2, ldx, 3)]
+                    //         + ALPHA_NNZ * origin[INDEX(x - 1, y0, 1, ldx, 3)]
+                    //         + ALPHA_PNZ * origin[INDEX(x + 1, y0, 1, ldx, 3)]
+                    //         + ALPHA_NPZ * origin[INDEX(x - 1, y2, 1, ldx, 3)]
+                    //         + ALPHA_PPZ * origin[INDEX(x + 1, y2, 1, ldx, 3)]
+                    //         + ALPHA_NZN * origin[INDEX(x - 1, y1, 0, ldx, 3)]
+                    //         + ALPHA_PZN * origin[INDEX(x + 1, y1, 0, ldx, 3)]
+                    //         + ALPHA_NZP * origin[INDEX(x - 1, y1, 2, ldx, 3)]
+                    //         + ALPHA_PZP * origin[INDEX(x + 1, y1, 2, ldx, 3)]
+                    //         + ALPHA_ZNN * origin[INDEX(x, y0, 0, ldx, 3)]
+                    //         + ALPHA_ZPN * origin[INDEX(x, y2, 0, ldx, 3)]
+                    //         + ALPHA_ZNP * origin[INDEX(x, y0, 2, ldx, 3)]
+                    //         + ALPHA_ZPP * origin[INDEX(x, y2, 2, ldx, 3)]
+                    //         + ALPHA_NNN * origin[INDEX(x - 1, y0, 0, ldx, 3)]
+                    //         + ALPHA_PNN * origin[INDEX(x + 1, y0, 0, ldx, 3)]
+                    //         + ALPHA_NPN * origin[INDEX(x - 1, y2, 0, ldx, 3)]
+                    //         + ALPHA_PPN * origin[INDEX(x + 1, y2, 0, ldx, 3)]
+                    //         + ALPHA_NNP * origin[INDEX(x - 1, y0, 2, ldx, 3)]
+                    //         + ALPHA_PNP * origin[INDEX(x + 1, y0, 2, ldx, 3)]
+                    //         + ALPHA_NPP * origin[INDEX(x - 1, y2, 2, ldx, 3)]
+                    //         + ALPHA_PPP * origin[INDEX(x + 1, y2, 2, ldx, 3)];
+                    for(int j = 0;j < 7;j ++) data_vector[j] = data_vector[j] * alpha_vector[j];
+                    for(int j = 1;j < 7;j ++) data_vector[0] =  data_vector[0] + data_vector[j];
+                    simd_store(data_vector[0], data);
+                    answer[INDEX(x, 0, 0, ldx, 1)] = data[0] + data[1] + data[2] + data[3]; 
                 }
 
                 put_reply = 0;
