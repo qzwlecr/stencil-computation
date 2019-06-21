@@ -172,7 +172,7 @@ void stencil_7_com(grid_param *p) {
             //if (runnable1 == 2) finish1 = 1;
             if (runnable[4]  && finish[4] == 0) {
                 z = 3;
-                finish[4] = 1;
+                //finish[4] = 1;
             } else if (runnable[5]  && finish[5] == 0) {
                 z = 2;
                 finish[5] = 1;
