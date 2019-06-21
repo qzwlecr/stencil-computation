@@ -244,7 +244,7 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
             if(count[i] == 0){
                 flag[i] = 2;
                 runnable_flag[i] = 2;
-                for(int i = 1;i < 64;i ++) h2ldm(runnable[i], i, pid % 4) = 2;
+                for(int j = 1;j < 64;j ++) h2ldm(runnable[i], j, pid % 4) = 2;
                 tot++;
             }
         }
@@ -255,7 +255,7 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
                 if(flag[i] != 0&& runnable_flag[i] == 0){
                     runnable_flag[i] = 1;
                     for (int j = 0; j < 64; j++)
-                        h2ldm(runnable[j], j, pid % 4) = 1;
+                        h2ldm(runnable[i], j, pid % 4) = 1;
                     tot++;
                 }
             }
@@ -442,7 +442,7 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
             if(count[i] == 0){
                 flag[i] = 2;
                 runnable_flag[i] = 2;
-                for(int i = 1;i < 64;i ++) h2ldm(runnable[i], i, pid % 4) = 2;
+                for(int j = 1;j < 64;j ++) h2ldm(runnable[i], j, pid % 4) = 2;
                 tot++;
             }
         }
@@ -453,7 +453,7 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
                 if(flag[i] != 0&& runnable_flag[i] == 0){
                     runnable_flag[i] = 1;
                     for (int j = 0; j < 64; j++)
-                        h2ldm(runnable[j], j, pid % 4) = 1;
+                        h2ldm(runnable[i], j, pid % 4) = 1;
                     tot++;
                 }
             }
