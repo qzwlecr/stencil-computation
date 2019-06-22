@@ -25,13 +25,8 @@ extern volatile int non_runnable;
 __thread_local volatile int runnable0 = 0;
 __thread_local volatile int runnable1 = 0;
 
-__thread_local doublev4 alpha_vector[9];
-__thread_local doublev4 data_vector[9];
-__thread_local double data[28];
 
-void _memcpy(double *dst, const double *src, int len) {
-    for (int i = 0; i < len; i++) dst[i] = src[i];
-}
+#define _memcpy(dst, src, len) { for (int i = 0; i < len; i++) *(dst + i) = *(src + i);}
 
 void stencil_7_com(grid_param *p) {
 #ifdef PROFILING
@@ -233,13 +228,6 @@ void stencil_27_com(grid_param *p) {
 #ifdef PROFILING
     lwpf_enter(TEST);
 #endif
-    alpha_vector[0] = simd_set_doublev4(ALPHA_NNN, ALPHA_ZNN, ALPHA_PNN, ALPHA_NZN);
-    alpha_vector[1] = simd_set_doublev4(ALPHA_ZZN, ALPHA_PZN, ALPHA_NPN, ALPHA_ZPN);
-    alpha_vector[2] = simd_set_doublev4(ALPHA_PPN, ALPHA_NNZ, ALPHA_ZNZ, ALPHA_PNZ);
-    alpha_vector[3] = simd_set_doublev4(ALPHA_NZZ, ALPHA_ZZZ, ALPHA_PZZ, ALPHA_NPZ);
-    alpha_vector[4] = simd_set_doublev4(ALPHA_ZPZ, ALPHA_PPZ, ALPHA_NNP, ALPHA_ZNP);
-    alpha_vector[5] = simd_set_doublev4(ALPHA_PNP, ALPHA_NZP, ALPHA_ZZP, ALPHA_PZP);
-    alpha_vector[6] = simd_set_doublev4(ALPHA_NPP, ALPHA_ZPP, ALPHA_PPP, 0);
     int id = athread_get_id(-1);
     int pid = p->grid_info->p_id;
     volatile int get_reply = 0, put_reply = 0;
@@ -296,6 +284,17 @@ void stencil_27_com(grid_param *p) {
     data_t origin[ldx * 3 * 3];
     data_t answer[ldx * 1 * 1];
     //runnable = 0;
+    doublev4 alpha_vector[9];
+    doublev4 data_vector[9];
+    data_t data[28];
+
+    alpha_vector[0] = simd_set_doublev4(ALPHA_NNN, ALPHA_ZNN, ALPHA_PNN, ALPHA_NZN);
+    alpha_vector[1] = simd_set_doublev4(ALPHA_ZZN, ALPHA_PZN, ALPHA_NPN, ALPHA_ZPN);
+    alpha_vector[2] = simd_set_doublev4(ALPHA_PPN, ALPHA_NNZ, ALPHA_ZNZ, ALPHA_PNZ);
+    alpha_vector[3] = simd_set_doublev4(ALPHA_NZZ, ALPHA_ZZZ, ALPHA_PZZ, ALPHA_NPZ);
+    alpha_vector[4] = simd_set_doublev4(ALPHA_ZPZ, ALPHA_PPZ, ALPHA_NNP, ALPHA_ZNP);
+    alpha_vector[5] = simd_set_doublev4(ALPHA_PNP, ALPHA_NZP, ALPHA_ZZP, ALPHA_PZP);
+    alpha_vector[6] = simd_set_doublev4(ALPHA_NPP, ALPHA_ZPP, ALPHA_PPP, 0);
 
     for (int t = 0; t < nt; t++) {
         src = buffer[t % 2];
@@ -332,8 +331,6 @@ void stencil_27_com(grid_param *p) {
 
 
                 for (int x = x_begin; x < x_end; ++x) {
-                    // memcpy(data,&origin[INDEX(x - 1,y1 - 1,)])
-                    data[27] = 0;
                     _memcpy(data, &origin[INDEX(x - 1, y0, 0, ldx, 3)], 3);
                     _memcpy(data + 3, &origin[INDEX(x - 1, y1, 0, ldx, 3)], 3);
                     _memcpy(data + 6, &origin[INDEX(x - 1, y2, 0, ldx, 3)], 3);
@@ -411,8 +408,6 @@ void stencil_27_com(grid_param *p) {
                 while (get_reply != 3);
 
                 for (int x = x_begin; x < x_end; ++x) {
-                    // memcpy(data,&origin[INDEX(x - 1,y1 - 1,)])
-                    data[27] = 0;
                     _memcpy(data, &origin[INDEX(x - 1, y0, 0, ldx, 3)], 3);
                     _memcpy(data + 3, &origin[INDEX(x - 1, y1, 0, ldx, 3)], 3);
                     _memcpy(data + 6, &origin[INDEX(x - 1, y2, 0, ldx, 3)], 3);

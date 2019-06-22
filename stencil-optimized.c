@@ -227,14 +227,6 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
                           MPI_COMM_WORLD, &request[1][count1++]);
             }
         }
-#ifdef TIMING
-        temp2 = timer();
-        if (pid == 1) {
-            fprintf(stderr, "[%d]Iter %d mpi end : %lf\n", pid, t, temp2);
-            fprintf(stderr, "[%d]Iter %d mpi consume : %lf\n", pid, t, temp2 - temp);
-        }
-        time_consumed += temp2 - temp;
-#endif
         non_runnable = 1;
         //assume that pid % 4 == cgid
         int flag0 = 0;
@@ -276,6 +268,14 @@ ptr_t stencil_7(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int nt
             if (runnable0_flag && runnable1_flag)
                 break;
         }
+#ifdef TIMING
+        temp2 = timer();
+        if (pid == 1) {
+            fprintf(stderr, "[%d]Iter %d mpi end : %lf\n", pid, t, temp2);
+            fprintf(stderr, "[%d]Iter %d mpi consume : %lf\n", pid, t, temp2 - temp);
+        }
+        time_consumed += temp2 - temp;
+#endif
         while (non_runnable == 1);
 
     }
@@ -440,15 +440,7 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
             }
             //MPI_Waitall(count, request, status);
         }
-#ifdef TIMING
-        temp2 = timer();
-        if (pid == 1) {
-            fprintf(stderr, "[%d]Iter %d mpi end : %lf\n", pid, t, temp2);
-            fprintf(stderr, "[%d]Iter %d mpi consume : %lf\n", pid, t, temp2 - temp);
-        }
-        time_consumed += temp2 - temp;
-#endif
-         non_runnable = 1;
+        non_runnable = 1;
         //assume that pid % 4 == cgid
         int flag0 = 0;
         int flag1 = 0;
@@ -489,6 +481,14 @@ ptr_t stencil_27(ptr_t grid, ptr_t aux, const dist_grid_info_t *grid_info, int n
             if (runnable0_flag && runnable1_flag)
                 break;
         }
+#ifdef TIMING
+        temp2 = timer();
+        if (pid == 1) {
+            fprintf(stderr, "[%d]Iter %d mpi end : %lf\n", pid, t, temp2);
+            fprintf(stderr, "[%d]Iter %d mpi consume : %lf\n", pid, t, temp2 - temp);
+        }
+        time_consumed += temp2 - temp;
+#endif
         while (non_runnable == 1);
     }
     athread_join();
