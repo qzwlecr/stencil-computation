@@ -7,6 +7,7 @@
 #include "common.h"
 
 //#define PROFILING
+//#define TIMING
 
 #ifdef PROFILING
 #define CPE
@@ -15,7 +16,6 @@
 #include "lwpf2.h"
 #endif
 
-#define TIMING
 #ifdef TIMING
 #define TIMING_COMPUTE_BEGIN rtc_(&rpcc_begin);
 #else
@@ -35,6 +35,16 @@
 #define TIMING_COMMUNI_END rtc_(&rpcc_end); communicate += rpcc_end - rpcc_begin;
 #else
 #define TIMING_COMMUNI_END ;
+#endif
+#ifdef TIMING
+#define TIMING_MEMCPY_BEGIN rtc_(&rpcc_begin_in);
+#else
+#define TIMING_MEMCPY_BEGIN ;
+#endif
+#ifdef TIMING
+#define TIMING_MEMCPY_END rtc_(&rpcc_end_in); memcpy_time += rpcc_end_in - rpcc_begin_in;
+#else
+#define TIMING_MEMCPY_END ;
 #endif
 
 #define DUMP(varname) cal_locked_printf("[%d][%d]%s = %d\n", pid, id, #varname, varname);
@@ -353,7 +363,8 @@ void stencil_27_com(grid_param *p) {
 
 #ifdef TIMING
     unsigned long rpcc_begin, rpcc_end;
-    unsigned long compute = 0, communicate = 0;
+    unsigned long rpcc_begin_in, rpcc_end_in;
+    unsigned long compute = 0, communicate = 0, memcpy_time = 0;
 #endif
 
     for (int t = 0; t < nt; t++) {
@@ -395,6 +406,7 @@ void stencil_27_com(grid_param *p) {
 
                 TIMING_COMPUTE_BEGIN;
                 for (int x = x_begin; x < x_end; ++x) {
+                    TIMING_MEMCPY_BEGIN;
                     _memcpy(data, &origin[INDEX(x - 1, y0, 0, ldx, 3)], 3);
                     _memcpy(data + 3, &origin[INDEX(x - 1, y1, 0, ldx, 3)], 3);
                     _memcpy(data + 6, &origin[INDEX(x - 1, y2, 0, ldx, 3)], 3);
@@ -404,6 +416,7 @@ void stencil_27_com(grid_param *p) {
                     _memcpy(data + 18, &origin[INDEX(x - 1, y0, 2, ldx, 3)], 3);
                     _memcpy(data + 21, &origin[INDEX(x - 1, y1, 2, ldx, 3)], 3);
                     _memcpy(data + 24, &origin[INDEX(x - 1, y2, 2, ldx, 3)], 3);
+                    TIMING_MEMCPY_END;
 
                     simd_load(data_vector[0], data);
                     simd_load(data_vector[1], data + 4);
@@ -480,6 +493,7 @@ void stencil_27_com(grid_param *p) {
 
                 TIMING_COMPUTE_BEGIN;
                 for (int x = x_begin; x < x_end; ++x) {
+                    TIMING_MEMCPY_BEGIN;
                     _memcpy(data, &origin[INDEX(x - 1, y0, 0, ldx, 3)], 3);
                     _memcpy(data + 3, &origin[INDEX(x - 1, y1, 0, ldx, 3)], 3);
                     _memcpy(data + 6, &origin[INDEX(x - 1, y2, 0, ldx, 3)], 3);
@@ -489,6 +503,7 @@ void stencil_27_com(grid_param *p) {
                     _memcpy(data + 18, &origin[INDEX(x - 1, y0, 2, ldx, 3)], 3);
                     _memcpy(data + 21, &origin[INDEX(x - 1, y1, 2, ldx, 3)], 3);
                     _memcpy(data + 24, &origin[INDEX(x - 1, y2, 2, ldx, 3)], 3);
+                    TIMING_MEMCPY_END;
 
                     simd_load(data_vector[0], data);
                     simd_load(data_vector[1], data + 4);
@@ -532,7 +547,7 @@ void stencil_27_com(grid_param *p) {
     }
 #ifdef TIMING
     if (pid == 1) {
-        cal_locked_printf("compute:%d, communicate:%d\n", compute, communicate);
+        cal_locked_printf("compute:%d, communicate:%d, memcpy:%d\n", compute, communicate, memcpy_time);
     }
 #endif
 
