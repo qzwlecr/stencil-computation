@@ -29,8 +29,8 @@ __thread_local doublev4 alpha_vector[9];
 __thread_local doublev4 data_vector[9];
 __thread_local double data[28];
 
-void _memcpy(double *dst,const double *src,int len){
-    for(int i = 0;i < len;i++) dst[i] = src[i];
+void _memcpy(double *dst, const double *src, int len) {
+    for (int i = 0; i < len; i++) dst[i] = src[i];
 }
 
 void stencil_7_com(grid_param *p) {
@@ -157,10 +157,10 @@ void stencil_7_com(grid_param *p) {
             if (finish0 && finish1) break;
             //if (runnable0 == 2) finish0 = 1;
             //if (runnable1 == 2) finish1 = 1;
-            if (runnable0  && finish0 == 0) {
+            if (runnable0 && finish0 == 0) {
                 z = 3;
                 finish0 = 1;
-            } else if (runnable1  && finish1 == 0) {
+            } else if (runnable1 && finish1 == 0) {
                 z = 2;
                 finish1 = 1;
             } else {
@@ -334,16 +334,16 @@ void stencil_27_com(grid_param *p) {
                 for (int x = x_begin; x < x_end; ++x) {
                     // memcpy(data,&origin[INDEX(x - 1,y1 - 1,)])
                     data[27] = 0;
-                    _memcpy(data    ,&origin[INDEX(x - 1, y0 ,0,ldx,3)],3);
-                    _memcpy(data + 3,&origin[INDEX(x - 1, y1 ,0,ldx,3)],3);
-                    _memcpy(data + 6,&origin[INDEX(x - 1, y2 ,0,ldx,3)],3);
-                    _memcpy(data + 9,&origin[INDEX(x - 1, y0 ,1,ldx,3)],3);
-                    _memcpy(data + 12,&origin[INDEX(x - 1, y1 ,1,ldx,3)],3);
-                    _memcpy(data + 15,&origin[INDEX(x - 1, y2 ,1,ldx,3)],3);
-                    _memcpy(data + 18,&origin[INDEX(x - 1, y0 ,2,ldx,3)],3);
-                    _memcpy(data + 21,&origin[INDEX(x - 1, y1 ,2,ldx,3)],3);
-                    _memcpy(data + 24,&origin[INDEX(x - 1, y2 ,2,ldx,3)],3);
-                    
+                    _memcpy(data, &origin[INDEX(x - 1, y0, 0, ldx, 3)], 3);
+                    _memcpy(data + 3, &origin[INDEX(x - 1, y1, 0, ldx, 3)], 3);
+                    _memcpy(data + 6, &origin[INDEX(x - 1, y2, 0, ldx, 3)], 3);
+                    _memcpy(data + 9, &origin[INDEX(x - 1, y0, 1, ldx, 3)], 3);
+                    _memcpy(data + 12, &origin[INDEX(x - 1, y1, 1, ldx, 3)], 3);
+                    _memcpy(data + 15, &origin[INDEX(x - 1, y2, 1, ldx, 3)], 3);
+                    _memcpy(data + 18, &origin[INDEX(x - 1, y0, 2, ldx, 3)], 3);
+                    _memcpy(data + 21, &origin[INDEX(x - 1, y1, 2, ldx, 3)], 3);
+                    _memcpy(data + 24, &origin[INDEX(x - 1, y2, 2, ldx, 3)], 3);
+
                     simd_load(data_vector[0], data);
                     simd_load(data_vector[1], data + 4);
                     simd_load(data_vector[2], data + 8);
@@ -381,10 +381,10 @@ void stencil_27_com(grid_param *p) {
                     //         + ALPHA_PNP * origin[INDEX(x + 1, y0, 2, ldx, 3)]
                     //         + ALPHA_NPP * origin[INDEX(x - 1, y2, 2, ldx, 3)]
                     //         + ALPHA_PPP * origin[INDEX(x + 1, y2, 2, ldx, 3)];
-                    for(int j = 0;j < 7;j ++) data_vector[j] = data_vector[j] * alpha_vector[j];
-                    for(int j = 1;j < 7;j ++) data_vector[0] =  data_vector[0] + data_vector[j];
+                    for (int j = 0; j < 7; j++) data_vector[j] = data_vector[j] * alpha_vector[j];
+                    for (int j = 1; j < 7; j++) data_vector[0] = data_vector[0] + data_vector[j];
                     simd_store(data_vector[0], data);
-                    answer[INDEX(x, 0, 0, ldx, 1)] = data[0] + data[1] + data[2] + data[3]; 
+                    answer[INDEX(x, 0, 0, ldx, 1)] = data[0] + data[1] + data[2] + data[3];
                 }
 
                 put_reply = 0;
@@ -403,14 +403,14 @@ void stencil_27_com(grid_param *p) {
         // if (id == 0)
         //     while (runnable == 0);
         //athread_syn(ARRAY_SCOPE, 0xffff);
-       int finish0 = 0, finish1 = 0;
+        int finish0 = 0, finish1 = 0;
         int z = -1;
-        while(1){
+        while (1) {
             if (finish0 && finish1) break;
-            if (runnable0  && finish0 == 0) {
+            if (runnable0 && finish0 == 0) {
                 z = 3;
                 finish0 = 1;
-            } else if (runnable1  && finish1 == 0) {
+            } else if (runnable1 && finish1 == 0) {
                 z = 2;
                 finish1 = 1;
             } else {
@@ -429,7 +429,7 @@ void stencil_27_com(grid_param *p) {
                                 ldx * 2 * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
                     while (get_reply != 3);
                 }
-                 get_reply = 0;
+                get_reply = 0;
                 athread_get(PE_MODE, &src[INDEX(0, yy + 1, zz - 1, ldx, ldy)], &origin[INDEX(0, y2, 0, ldx, 3)],
                             ldx * sizeof(data_t), (void *) &get_reply, 0, 0, 0);
                 athread_get(PE_MODE, &src[INDEX(0, yy + 1, zz, ldx, ldy)], &origin[INDEX(0, y2, 1, ldx, 3)],
@@ -468,7 +468,7 @@ void stencil_27_com(grid_param *p) {
                             + ALPHA_NPP * origin[INDEX(x - 1, y2, 2, ldx, 3)]
                             + ALPHA_PPP * origin[INDEX(x + 1, y2, 2, ldx, 3)];
 
-                    }
+                }
 
                 put_reply = 0;
                 athread_put(PE_MODE, answer, &dest[INDEX(0, yy, zz, ldx, ldy)],
@@ -486,8 +486,9 @@ void stencil_27_com(grid_param *p) {
         lwpf_stop(A);
 #endif
         athread_syn(ARRAY_SCOPE, 0xffff);
+        runnable0 = 0;
+        runnable1 = 0;
         if (id == 0) {
-            // runnable = 0;
             *p->non_runnable = 0;
         }
         athread_syn(ARRAY_SCOPE, 0xffff);
